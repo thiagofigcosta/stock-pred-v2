@@ -2,6 +2,9 @@ ignoreme/
 #Pytho{\}
 .tmp_pythoN/
 
+datasets/
+saved_models/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
