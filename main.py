@@ -8,6 +8,78 @@ from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
 from Utils import Utils
 
+def getPredefHyperparams():
+	hyperparameters=[]
+	
+	backwards_samples=20
+	forward_samples=7 
+	lstm_layers=2
+	layer_sizes=[25,15]
+	max_epochs=100
+	batch_size=5
+	stateful=False
+	dropout_values=0
+	normalize=True
+	train_percent=.8
+	val_percent=.2
+	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
+	
+	backwards_samples=30
+	forward_samples=7 
+	lstm_layers=2
+	layer_sizes=[25,15]
+	max_epochs=100
+	batch_size=5
+	stateful=False
+	dropout_values=0
+	normalize=True
+	train_percent=.8
+	val_percent=.2
+	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
+	
+	backwards_samples=30
+	forward_samples=7 
+	lstm_layers=3
+	layer_sizes=[40,30,20]
+	max_epochs=100
+	batch_size=5
+	stateful=False
+	dropout_values=[0,0,0.2]
+	normalize=True
+	train_percent=.8
+	val_percent=.2
+	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
+	
+
+	backwards_samples=20
+	forward_samples=7 
+	lstm_layers=2
+	layer_sizes=[25,15]
+	max_epochs=100
+	batch_size=5
+	stateful=True
+	dropout_values=0
+	normalize=True
+	train_percent=.8
+	val_percent=.2
+	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
+	
+	backwards_samples=20
+	forward_samples=7 
+	lstm_layers=1
+	layer_sizes=[25]
+	max_epochs=100
+	batch_size=5
+	stateful=False
+	dropout_values=0
+	normalize=True
+	train_percent=.8
+	val_percent=.2
+	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
+	
+	return hyperparameters
+
+
 
 def main(argv):
 	crawler=Crawler()
@@ -19,37 +91,43 @@ def main(argv):
 	stocks.append('ENBR3.SA')
 	stocks.append('TRPL4.SA')
 
-	start_date=Utils.timestampToHumanReadable(0)
-	end_date='28/04/2021'
+	start_date=Utils.FIRST_DATE
+	end_date='07/05/2021'
 	start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
 	end_date_formated_for_file=''.join(Utils.extractNumbersFromDate(end_date,reverse=True))
 
-	filepaths=[]
+	filepaths={}
 	for stock in stocks:
 		filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
-		filepaths.append(crawler.getDatasetPath(filename))
-		if not Utils.checkIfPathExists(filepaths[-1]):
+		filepath=crawler.getDatasetPath(filename)
+		filepaths[stock]=filepath
+		if not Utils.checkIfPathExists(filepath):
 			crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
 			# crawler.downloadStockDataCustomInterval(stock,filename,data_range='max') # just example
+	
+	hyperparameters_tmp=getPredefHyperparams()
+	hyperparameters={}
+	for i,stock in enumerate(stocks):
+		hyperparameters[stock]=hyperparameters_tmp[i]
+	hyperparameters_tmp=[]
+	
+	for stock in stocks:
+		# build and train
+		neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
+		neuralNetwork.loadDataset(filepaths[stock],plot=True)
+		neuralNetwork.buildModel()
+		neuralNetwork.train()
+		neuralNetwork.eval(plot=True)
+		neuralNetwork.save()
+	
+	for stock in stocks:
+		# load
+		neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
+		neuralNetwork.load()
+		neuralNetwork.loadTestDataset(filepaths[stock],from_date='20/04/2021',plot=True)
+		neuralNetwork.eval(plot=True)
 
-	backwards_samples=20
-	forward_samples=4
-	lstm_layers=2
-	layer_sizes=[25,15]
-	max_epochs=1
-	batch_size=5
-	stateful=False
-	dropout_values=0
-	normalize=True
-	train_percent=.8
-	val_percent=.2
-	hyperparameters=Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent)
-	neuralNetwork=NeuralNetwork(hyperparameters,verbose=True)
-	neuralNetwork.loadDataset('datasets/CESP3.SA_daily_19691231-20210428.csv',plot=True)
-	neuralNetwork.buildModel()
-	neuralNetwork.train()
-	neuralNetwork.eval(plot=True)
-	neuralNetwork.save()
+	
 
 if __name__ == "__main__":
 	delta=-time.time()

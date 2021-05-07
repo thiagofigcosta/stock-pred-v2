@@ -51,12 +51,12 @@ class NeuralNetwork:
 			self.filenames['scaler']=[self.basename+'_scaler.bin']
 
 	def load(self):
-		if self.data is None:
-			raise Exception('Load the dataset before loading the model')
 		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
 		self.setFilenames()
 		self.model=load_model(self.getModelPath(self.filenames['model']))
 		self.statefulModelWorkaround()
+		if self.data is None:
+			self.data=Dataset(None,None,None,None,None,None,None,None,None,None,None,None)
 		self.data.scalers=[]
 		for scaler_filename in self.filenames['scaler']:
 			self.data.scalers.append(Utils.loadObj(self.getModelPath(scaler_filename)))
@@ -88,7 +88,8 @@ class NeuralNetwork:
 		else:
 			data_to_eval=[]
 			# data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels,index=self.data.indexes.train)) # TODO era pra ser assim
-			data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels[:-self.hyperparameters.forward_samples, :],index=Utils.estimateNextElements(self.data.indexes.train,((len(self.data.indexes.test)-len(self.data.test.features))-(len(self.data.indexes.train)-len(self.data.train_val.features))))))  # TODO gambiarra avançada  
+			if len(self.data.train_val.features) > 0:
+				data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels[:-self.hyperparameters.forward_samples, :],index=Utils.estimateNextElements(self.data.indexes.train,((len(self.data.indexes.test)-len(self.data.test.features))-(len(self.data.indexes.train)-len(self.data.train_val.features))))))  # TODO gambiarra avançada  
 			data_to_eval.append(Dataset.EvalData(self.data.test.features,real=self.data.test.labels,index=self.data.indexes.test))		   
             
 		for data in data_to_eval:
@@ -335,11 +336,19 @@ class NeuralNetwork:
 					new_hist[key] = list(map(float, self.history.history[key]))
 		self.history=new_hist
 
+	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False):
+		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0)
+
 	# company_index_array defines which dataset files are from each company, enables to load multiple companies and use multiple files for the same company
 	# from_date format : '01/03/2002'
-	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False):
+	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None):
 		if type(paths)!=list:
 			paths=[paths]
+
+		if train_percent is None:
+			train_percent=self.hyperparameters.train_percent
+		if val_percent is None:
+			val_percent=self.hyperparameters.val_percent
 
 		full_data=[]
 		amount_of_companies=len(set(company_index_array))
@@ -470,7 +479,7 @@ class NeuralNetwork:
 			firstScaler=unitedScaler
 			secondScaler=None
 		
-		train_idx=int(len(X_full_data)*self.hyperparameters.train_percent)
+		train_idx=int(len(X_full_data)*train_percent)
 
 		X_train_full=X_full_data[:train_idx]
 		Y_train_full=Y_full_data[:train_idx]
@@ -488,8 +497,8 @@ class NeuralNetwork:
 			new_date=pd.to_datetime(last_date+np.timedelta64(minutes_step*i,'m'))
 			test_date_index.append(new_date)
 		
-		if self.hyperparameters.val_percent>0:
-			X_train,X_val,Y_train,Y_val = train_test_split(X_train_full, Y_train_full, test_size=self.hyperparameters.val_percent)
+		if val_percent>0:
+			X_train,X_val,Y_train,Y_val = train_test_split(X_train_full, Y_train_full, test_size=val_percent)
 		else:
 			X_train=X_train_full
 			Y_train=Y_train_full
@@ -497,5 +506,7 @@ class NeuralNetwork:
 		scalers=[firstScaler]
 		if secondScaler is not None:
 			scalers.insert(0,secondScaler)
-
+		
+		if self.data is not None:
+			scalers=self.data.scalers
 		self.data=Dataset(dataset_name,scalers,X_train,Y_train,X_val,Y_val,X_test,Y_test,X_train_full,Y_train_full,train_date_index,test_date_index)

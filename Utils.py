@@ -17,6 +17,7 @@ class Utils:
 		FILE_SEPARATOR='/'
 	DATE_FORMAT='%d/%m/%Y'
 	DATETIME_FORMAT='%d/%m/%Y %H:%M:%S'
+	FIRST_DATE='01/01/1970'
 
 	def __init__(self):
 		pass

@@ -8,33 +8,33 @@ from Utils import Utils
 
 class Hyperparameters:
 	def __init__(self,input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='adam',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True):
-		self.backwards_samples=backwards_samples
-		self.forward_samples=forward_samples
-		self.lstm_layers=lstm_layers
-		self.max_epochs=max_epochs
-		self.patience_epochs=patience_epochs
-		self.batch_size=batch_size
-		self.stateful=stateful
-		self.dropout_values=dropout_values
-		self.layer_sizes=layer_sizes
-		self.normalize=normalize
-		self.optimizer=optimizer
-		self.model_metrics=model_metrics
-		self.loss=loss
-		self.train_percent=train_percent
-		self.val_percent=val_percent
-		self.amount_companies=amount_companies
-		self.input_features=input_features
-		self.output_feature=output_feature
-		self.index_feature=index_feature
-		self.shuffle=shuffle
+		self.backwards_samples=backwards_samples # [60, 5]
+		self.forward_samples=forward_samples # [5, 14]
+		self.lstm_layers=lstm_layers # [1, 4]
+		self.max_epochs=max_epochs	# [10, 200]
+		self.patience_epochs=patience_epochs # [10, 20]
+		self.batch_size=batch_size # [1, 22]
+		self.stateful=stateful # [False, True] or [0, 1]
+		self.dropout_values=dropout_values # [0.0, 1.0] * lstm_layers
+		self.layer_sizes=layer_sizes # [10, 80] * lstm_layers (two formulas to approximate that)
+		self.normalize=normalize # [False, True] or [0, 1] - or always True
+		self.optimizer=optimizer # always 'adam'
+		self.model_metrics=model_metrics # always ['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		self.loss=loss # always 'mean_squared_error'
+		self.train_percent=train_percent # [0.6, 0.9] - depends on dataset size
+		self.val_percent=val_percent # [0.1, 0.3] - depends on dataset size
+		self.amount_companies=amount_companies # depends on the problem to be solved
+		self.input_features=input_features # depends on the features, but great chance of being ['Close']
+		self.output_feature=output_feature # depends on the features, but super huge great hyper chance of being 'Close'
+		self.index_feature=index_feature  # depends on the features, but super huge great hyper chance of being 'Date'
+		self.shuffle=shuffle # [False, True] or [0, 1]
 		if type(self.dropout_values)==int:
 			self.dropout_values=[self.dropout_values]*self.lstm_layers
 		if type(self.layer_sizes)==int:
 			self.layer_sizes=[self.layer_sizes]*self.lstm_layers
 		if len(self.dropout_values)!=self.lstm_layers:
 			raise Exception('Wrong dropout_values array size, should be {}'.format(self.lstm_layers))
-		if len(self.layer_sizes)!=self.lstm_layers:
+		if len(self.layer_sizes)!=self.lstm_layers and not (self.layer_sizes[0]==backwards_samples and len(self.layer_sizes)==self.lstm_layers+1):
 			raise Exception('Wrong layer_sizes array size, should be {}'.format(self.lstm_layers))
 		if len(self.input_features)>1 and self.amount_companies>1:
 			raise Exception('Only input_features or amount_companies must be greater than 1')
@@ -42,7 +42,8 @@ class Hyperparameters:
 			raise Exception('Train + validation percent must be smaller than 1 and bigger than 0')
 		if self.stateful:
 			self.batch_size=1 # batch size must be one for stateful
-		self.layer_sizes.insert(0,self.backwards_samples)
+		if len(self.layer_sizes)==self.lstm_layers:
+			self.layer_sizes.insert(0,self.backwards_samples)
 		self.uuid=self.genUuid()
 
 	def toString(self):
