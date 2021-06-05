@@ -19,7 +19,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=0
-	normalize=True
+	normalize=False
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -32,7 +32,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=0
-	normalize=True
+	normalize=False
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -45,7 +45,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=[0,0,0.2]
-	normalize=True
+	normalize=False
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -59,7 +59,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=True
 	dropout_values=0
-	normalize=True
+	normalize=False
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -72,7 +72,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=0
-	normalize=True
+	normalize=False
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -114,18 +114,19 @@ def main(argv):
 	for stock in stocks:
 		# build and train
 		neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
-		neuralNetwork.loadDataset(filepaths[stock],plot=True)
-		neuralNetwork.buildModel()
-		neuralNetwork.train()
-		neuralNetwork.eval(plot=True)
-		neuralNetwork.save()
+		if not neuralNetwork.checkTrainedModelExists():
+			neuralNetwork.loadDataset(filepaths[stock],plot=True)
+			neuralNetwork.buildModel()
+			neuralNetwork.train()
+			neuralNetwork.eval(plot=True,plot_training=True)
+			neuralNetwork.save()
 	
 	for stock in stocks:
 		# load
 		neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
 		neuralNetwork.load()
-		neuralNetwork.loadTestDataset(filepaths[stock],from_date='20/04/2021',plot=True)
-		neuralNetwork.eval(plot=True)
+		neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021')
+		neuralNetwork.eval(plot=True,print_prediction=True)
 
 	
 

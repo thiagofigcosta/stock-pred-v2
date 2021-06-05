@@ -54,7 +54,6 @@ class Actuator:
 		total_money_to_invest=Actuator.INITIAL_INVESTIMENT
 		real_stock_delta=Actuator.getStockReturn(stock_real_array)
 		pred_stock_delta=Actuator.getStockReturn(stock_pred_array)
-		e=math.e
 		corret_predicts_in_a_row=0
 		savings_money=0
 		current_money=total_money_to_invest
@@ -77,7 +76,7 @@ class Actuator:
 						if extra>1:
 							extra=1
 						lucky_randomness=rd.uniform(.07,.13)+.13*extra
-					confidence=(-1+(e**(predicted_valuing**.6/1.13))**0.5)/5
+					confidence=(-1+(math.e**(predicted_valuing**.6/1.13))**0.5)/5
 					multiplier=(lucky_randomness+confidence)/2
 					if multiplier > 0.23:
 						multiplier=0.23

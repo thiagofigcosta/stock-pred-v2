@@ -50,6 +50,9 @@ class NeuralNetwork:
 		else:
 			self.filenames['scaler']=[self.basename+'_scaler.bin']
 
+	def checkTrainedModelExists(self):
+		return Utils.checkIfPathExists(self.getModelPath(self.filenames['hyperparameters'])) and Utils.checkIfPathExists(self.getModelPath(self.filenames['model']))
+
 	def load(self):
 		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
 		self.setFilenames()
@@ -78,7 +81,7 @@ class NeuralNetwork:
 		self.parseHistoryToVanilla()
 		self.statefulModelWorkaround()
 
-	def eval(self,data_to_eval=None,plot=False):
+	def eval(self,data_to_eval=None,plot=False,plot_training=False, print_prediction=False):
 		if data_to_eval is not None:
 			if type(data_to_eval)!=list:
 				data_to_eval=[data_to_eval]
@@ -87,8 +90,8 @@ class NeuralNetwork:
 					raise Exception('Wrong data object type')
 		else:
 			data_to_eval=[]
-			# data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels,index=self.data.indexes.train)) # TODO era pra ser assim
-			if len(self.data.train_val.features) > 0:
+			if self.data.train_val.features.shape[0] > 0:
+				# data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels,index=self.data.indexes.train)) # TODO era pra ser assim
 				data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels[:-self.hyperparameters.forward_samples, :],index=Utils.estimateNextElements(self.data.indexes.train,((len(self.data.indexes.test)-len(self.data.test.features))-(len(self.data.indexes.train)-len(self.data.train_val.features))))))  # TODO gambiarra avançada  
 			data_to_eval.append(Dataset.EvalData(self.data.test.features,real=self.data.test.labels,index=self.data.indexes.test))		   
             
@@ -107,7 +110,7 @@ class NeuralNetwork:
 				data.predicted=self.data.scalers[0].inverse_transform(data.predicted)
 				data.real=self.data.scalers[0].inverse_transform(data.real)
 
-		if plot:
+		if plot_training:
 			plt.plot(self.history['loss'], label='loss')
 			plt.plot(self.history['val_loss'], label='val_loss')
 			plt.legend(loc='best')
@@ -170,6 +173,9 @@ class NeuralNetwork:
 						plt.plot(data.index[input_size+magic:-output_size+1],data.real[i], label='Real')
 						for j in range(len(predicted_array_labels)):
 							plt.plot(data.index[input_size+magic:],data.predicted[i][j], color=predicted_array_colors[j], label=predicted_array_labels[j])
+							if print_prediction:
+								print(self.stock_name)
+								print(data.predicted[i][j])
 						plt.title('Stock values {} | {} - Company {}'.format(self.data.name,k,company_text))
 						plt.legend(loc='best')
 						plt.show()
@@ -438,6 +444,9 @@ class NeuralNetwork:
 				plt.plot(full_plot_data, label='Stock Values of {} normalized'.format(dataset_name))
 				plt.legend(loc='best')
 				plt.show()
+		while full_data.shape[0]<self.hyperparameters.backwards_samples+self.hyperparameters.forward_samples: # TODO gambiarra q nao funciona
+			full_data = np.insert(full_data,0,full_data[0],axis=0)
+			raise Exception ('Please, increase the amount of data (\'from_date\')') # TODO remove
 		data_size=len(full_data)
 
 		X_full_data=[]
@@ -506,7 +515,7 @@ class NeuralNetwork:
 		scalers=[firstScaler]
 		if secondScaler is not None:
 			scalers.insert(0,secondScaler)
-		
+
 		if self.data is not None:
 			scalers=self.data.scalers
 		self.data=Dataset(dataset_name,scalers,X_train,Y_train,X_val,Y_val,X_test,Y_test,X_train_full,Y_train_full,train_date_index,test_date_index)

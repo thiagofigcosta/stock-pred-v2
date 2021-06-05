@@ -8,7 +8,7 @@ from Utils import Utils
 
 class Hyperparameters:
 	def __init__(self,input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='adam',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True):
-		self.backwards_samples=backwards_samples # [60, 5]
+		self.backwards_samples=backwards_samples # [5, 60]
 		self.forward_samples=forward_samples # [5, 14]
 		self.lstm_layers=lstm_layers # [1, 4]
 		self.max_epochs=max_epochs	# [10, 200]
