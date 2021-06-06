@@ -190,65 +190,6 @@ class NeuralNetwork:
 		print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
 		return metrics
 
-	def alignAndCropTwoArrays(self,first,second,reverse=False):
-		sorted_second=second
-		sorted_second.sort()
-		used_first=first.copy()
-		if reverse:
-			used_first.reverse()
-		common=None
-		for el in used_first:
-			ind=Utils.binarySearch(sorted_second,el)
-			if ind is not None:
-				common=el
-				break
-		if common is None:
-			raise Exception('No common element between arrays')
-		else:
-			if reverse:
-				return first[:first.index(common)+1], second[:second.index(common)+1], common
-			else:
-				return first[first.index(common):], second[second.index(common):], common
-
-	def alignIndexesOnFirstCommonValue(self,array_of_indexes,reverse=False):
-		start=0
-		last_common=None
-		limit=len(array_of_indexes)-1
-		while start<limit:
-			f_array,s_array,common=self.alignAndCropTwoArrays(array_of_indexes[start],array_of_indexes[start+1],reverse=reverse)
-			array_of_indexes[start]=f_array
-			array_of_indexes[start+1]=s_array
-			if common != last_common:
-				if last_common is not None:
-					start=-1
-				last_common=common
-			start+=1
-		if reverse:
-			[el.reverse() for el in array_of_indexes]
-		return array_of_indexes
-
-	def unwrapFoldedArray(self,array,use_last=False,use_mean=False,magic_offset=0):
-		fold_size=len(array[0])
-		array_size=len(array)
-		unwraped_size=array_size+fold_size-1
-		if use_mean:
-			aux_sum_array_tuple=([0]*unwraped_size,[0]*unwraped_size)
-			for i in range(magic_offset,array_size):
-				for j in range(fold_size):
-					aux_sum_array_tuple[0][i+j]+=array[i][j]
-					aux_sum_array_tuple[1][i+j]+=1
-			unwraped=[]
-			for i in range(magic_offset,unwraped_size):
-				unwraped.append(aux_sum_array_tuple[0][i]/aux_sum_array_tuple[1][i])
-		else:
-			position=0
-			if use_last:
-				#then use last
-				position=fold_size-1
-			unwraped=[array[i][position] for i in range(magic_offset,array_size)]
-			for i in range(1,fold_size):
-				unwraped.append(array[array_size-1][i])
-		return unwraped
 
 	def processPredictedArray(self,Y_pred):
 		magic_offset=1 # align pred with real
