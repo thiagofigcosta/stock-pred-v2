@@ -9,6 +9,7 @@ import codecs
 import joblib
 import numpy as np
 from datetime import datetime
+import datetime as dt
 
 class Utils:
 	if os.name == 'nt':
@@ -48,6 +49,27 @@ class Utils:
 			return int(time.mktime(datetime.strptime(string,date_format).timetuple()))
 		else:
 			return int(time.mktime(datetime.strptime(string,Utils.DATETIME_FORMAT).timetuple()))
+
+	@staticmethod
+	def getNextNWorkDays(from_date, add_days):
+		business_days_to_add = add_days
+		current_date = from_date
+		dates=[]
+		while business_days_to_add > 0:
+			current_date += dt.timedelta(days=1)
+			weekday = current_date.weekday()
+			if weekday >= 5: # sunday = 6
+				continue
+			business_days_to_add -= 1
+			dates.append(current_date)
+		return dates
+
+	@staticmethod
+	def getStrNextNWorkDays(from_date, add_days, date_format=DATE_FORMAT):
+		from_date=datetime.strptime(from_date,date_format)
+		dates=Utils.getNextNWorkDays(from_date,add_days)
+		dates=[date.strftime(date_format) for date in dates]
+		return dates
 
 	@staticmethod
 	def timestampToHumanReadable(timestamp,include_time=False,date_format=DATE_FORMAT):

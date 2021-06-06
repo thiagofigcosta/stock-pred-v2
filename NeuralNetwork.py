@@ -5,6 +5,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3' # DISABLE TENSORFLOW WARNING
 from Hyperparameters import Hyperparameters
 from Dataset import Dataset
+from DatasetOld import DatasetOld
 from Utils import Utils
 from Actuator import Actuator
 import pandas as pd
@@ -59,7 +60,7 @@ class NeuralNetwork:
 		self.model=load_model(self.getModelPath(self.filenames['model']))
 		self.statefulModelWorkaround()
 		if self.data is None:
-			self.data=Dataset(None,None,None,None,None,None,None,None,None,None,None,None)
+			self.data=DatasetOld(None,None,None,None,None,None,None,None,None,None,None,None)
 		self.data.scalers=[]
 		for scaler_filename in self.filenames['scaler']:
 			self.data.scalers.append(Utils.loadObj(self.getModelPath(scaler_filename)))
@@ -86,14 +87,14 @@ class NeuralNetwork:
 			if type(data_to_eval)!=list:
 				data_to_eval=[data_to_eval]
 			for data in data_to_eval:
-				if type(data)!=Dataset.EvalData:
+				if type(data)!=DatasetOld.EvalData:
 					raise Exception('Wrong data object type')
 		else:
 			data_to_eval=[]
 			if self.data.train_val.features.shape[0] > 0:
-				# data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels,index=self.data.indexes.train)) # TODO era pra ser assim
-				data_to_eval.append(Dataset.EvalData(self.data.train_val.features,real=self.data.train_val.labels[:-self.hyperparameters.forward_samples, :],index=Utils.estimateNextElements(self.data.indexes.train,((len(self.data.indexes.test)-len(self.data.test.features))-(len(self.data.indexes.train)-len(self.data.train_val.features))))))  # TODO gambiarra avançada  
-			data_to_eval.append(Dataset.EvalData(self.data.test.features,real=self.data.test.labels,index=self.data.indexes.test))		   
+				# data_to_eval.append(DatasetOld.EvalData(self.data.train_val.features,real=self.data.train_val.labels,index=self.data.indexes.train)) # TODO era pra ser assim
+				data_to_eval.append(DatasetOld.EvalData(self.data.train_val.features,real=self.data.train_val.labels[:-self.hyperparameters.forward_samples, :],index=Utils.estimateNextElements(self.data.indexes.train,((len(self.data.indexes.test)-len(self.data.test.features))-(len(self.data.indexes.train)-len(self.data.train_val.features))))))  # TODO gambiarra avançada  
+			data_to_eval.append(DatasetOld.EvalData(self.data.test.features,real=self.data.test.labels,index=self.data.indexes.test))		   
             
 		for data in data_to_eval:
 			data.predicted=self.model.predict(data.features)
@@ -343,11 +344,11 @@ class NeuralNetwork:
 		self.history=new_hist
 
 	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False):
-		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0)
+		self.loadDatasetOld(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0)
 
 	# company_index_array defines which dataset files are from each company, enables to load multiple companies and use multiple files for the same company
 	# from_date format : '01/03/2002'
-	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None):
+	def loadDatasetOld(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None):
 		if type(paths)!=list:
 			paths=[paths]
 
@@ -516,6 +517,15 @@ class NeuralNetwork:
 		if secondScaler is not None:
 			scalers.insert(0,secondScaler)
 
+		print('X_train',X_train.shape)
+		print('Y_train',Y_train.shape)
+		print()
+		print('X_val',X_val.shape)
+		print('Y_val',Y_val.shape)
+		print()
+		print('X_test',X_test.shape)
+		print('Y_test',Y_test.shape)
+
 		if self.data is not None:
 			scalers=self.data.scalers
-		self.data=Dataset(dataset_name,scalers,X_train,Y_train,X_val,Y_val,X_test,Y_test,X_train_full,Y_train_full,train_date_index,test_date_index)
+		self.data=DatasetOld(dataset_name,scalers,X_train,Y_train,X_val,Y_val,X_test,Y_test,X_train_full,Y_train_full,train_date_index,test_date_index)
