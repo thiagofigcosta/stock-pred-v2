@@ -53,14 +53,23 @@ class Dataset:
 
 		def getNeuralNetworkArray(self):
 			pass # TODO return X and Y arrays for LSTM network
-			# X_train (3418, 20, 1)
-			# Y_train (3418, 7)
 
-			# X_val (855, 20, 1)
-			# Y_val (855, 7)
+			# como é hoje:
+				# X_train (3418, 20, 1)
+				# Y_train (3418, 7)
+				# X_val (855, 20, 1)
+				# Y_val (855, 7)
+				# X_test (1069, 20, 1)
+				# Y_test (1062, 7)
 
-			# X_test (1069, 20, 1)
-			# Y_test (1062, 7)
+
+			# como vou fazer:
+				# X_train (3418, 20, 1, 1) # (amostras, for/backwards, empresa, features)
+				# Y_train (3418, 7, 1) # (amostras, for/backwards, empresa)
+				# X_val (855, 20, 1, 1) # (amostras, for/backwards, empresa, features)
+				# Y_val (855, 7, 1) # (amostras, for/backwards, empresa)
+				# X_test (1069, 20, 1, 1)# (amostras, for/backwards, empresa, features)
+				# Y_test (1062, 7, 1) # (amostras, for/backwards, empresa)
 
 		@staticmethod
 		def datasetFromNeuralNetworkArray(X,Y):
