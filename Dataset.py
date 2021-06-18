@@ -237,7 +237,7 @@ class Dataset:
 				break
 			cur=cur.next
 			i+=1
-		return start_index,np.array(X, order='C', subok=True),np.array(Y, order='A', subok=True)
+		return start_index,np.array(X, order='C', subok=True),np.array(Y, order='C', subok=True)
 	
 	def addCompany(self,stock_value_array,date_array=None,features_2d_array=None):
 		if self.converted:
