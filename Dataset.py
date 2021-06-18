@@ -20,6 +20,30 @@ class Dataset:
 			self.forward_values=forward_values # 2d array of values
 			self.next=None # next entry
 
+		def copy(self):
+			new_entry=None
+			previous_entry=None
+			first=None
+			cur=self
+			while True:
+				cur_backward_values=None
+				if cur.backward_values is not None:
+					cur_backward_values=cur.backward_values.copy()
+				cur_forward_values=None
+				if cur.forward_values is not None:
+					cur_forward_values=cur.forward_values.copy()
+				new_entry=Dataset.Entry(index=cur.index,date_index=cur.date_index,has_only_indexes=cur.has_only_indexes,has_only_previous_values=cur.has_only_previous_values,backward_values=cur_backward_values,forward_values=cur_forward_values)
+				if first is None:
+					first=new_entry
+					previous_entry=new_entry
+				else:
+					previous_entry.next=new_entry
+					previous_entry=previous_entry.next
+				if cur.next is None:
+					break
+				cur=cur.next
+			return first
+
 		def regenerateIndexes(self):
 			index=0
 			cur=self
@@ -220,10 +244,44 @@ class Dataset:
 		self.converted=not self.converted
 		back_samples,forward_samples=self.converted_params
 		self.converted_params=tuple()
-
+		# get current values
 		values=self.getValues()
 		dates=self.getIndexes(get_all=True)
-		raise Exception('TODO code me')
+		# get future values 
+		cur=self.data
+		while True:
+			if cur.forward_values is None and not cur.has_only_previous_values and not cur.has_only_indexes and cur.forward_values is not None:
+				values.append(cur.forward_values)
+			if cur.next is None:
+				break
+			cur=cur.next
+
+		values_len=float('inf')
+		if values is not None:
+			values_len=len(values)
+		dates_len=float('inf')
+		if dates is not None:
+			dates_len=len(dates)
+		length=min(dates_len,values_len)
+		cur=None
+		self.data=None
+		for i in range(length):
+			cur_date=None
+			if dates is not None:
+				cur_date=dates[i]
+			cur_values=values[i]
+			if type(cur_values[0]) is list:
+				cur_values=[cur_values]
+			else:
+				cur_values=[[cur_values]]
+			entry=Dataset.Entry(index=i,date_index=cur_date,backward_values=cur_values)
+			if cur is None:
+				cur=entry
+			else:
+				cur.next=entry
+				cur=cur.next
+			if self.data is None:
+				self.data=entry
 		self.regenerateIndexes()
 
 	@staticmethod
@@ -334,6 +392,13 @@ class Dataset:
 
 	def regenerateIndexes(self):
 		self.data.regenerateIndexes()
+
+	def copy(self):
+		new_dataset=Dataset(name=self.name)
+		new_dataset.converted=self.converted
+		new_dataset.converted_params=self.converted_params+tuple() # tuple copy
+		new_dataset.data=self.data.copy()
+		return new_dataset
 	
 	def __init__(self,name):
 		self.name=name

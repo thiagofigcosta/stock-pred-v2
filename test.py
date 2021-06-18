@@ -48,6 +48,15 @@ print('Values:',dataset.getValues())
 print('Values Main:',dataset.getValues(only_main_value=True))
 # -------------------
 print('-------------------')
+dataset_reverted=dataset.copy()
+dataset_reverted.name+=' copy'
+dataset_reverted.revertFromTemporalValues()
+print('Len:',dataset_reverted.getSize())
+dataset_reverted.printRawValues()
+print('Indexes:',dataset_reverted.getIndexes())
+print('Values:',dataset_reverted.getValues())
+# -------------------
+print('-------------------')
 print('Train data:')
 start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays()
 print('Neural Network Start Index:',start_index)
@@ -108,7 +117,15 @@ print('Train Data Splitted Start Index:',start_index_part_2)
 print('Neural Network X Splitted P1 Shape:',dataset_x_p1.shape)
 print('Neural Network X Splitted P1 Shape:',dataset_x_p2.shape)
 print()
-
+# -------------------
+print('-------------------')
+dataset_reverted=dataset.copy()
+dataset_reverted.name+=' copy'
+dataset_reverted.revertFromTemporalValues()
+print('Len:',dataset_reverted.getSize())
+dataset_reverted.printRawValues()
+print('Indexes:',dataset_reverted.getIndexes())
+print('Values:',dataset_reverted.getValues())
 
 
 
@@ -118,12 +135,3 @@ print()
 # -------------------
 print('-------------------')
 dataset.setNeuralNetworkResultArray(start_index,np.array([]))
-
-# TODO do
-# -------------------
-print('-------------------')
-dataset.revertFromTemporalValues()
-print('Len:',dataset.getSize())
-dataset.printRawValues()
-print('Indexes:',dataset.getIndexes())
-print('Values:',dataset.getValues())
