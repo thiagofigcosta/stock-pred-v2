@@ -108,6 +108,18 @@ print('Train Data Splitted Start Index:',start_index_part_2)
 print('Neural Network X Splitted P1 Shape:',dataset_x_p1.shape)
 print('Neural Network X Splitted P1 Shape:',dataset_x_p2.shape)
 print()
+
+
+
+
+
+
+# TODO do
+# -------------------
+print('-------------------')
+dataset.setNeuralNetworkResultArray(start_index,np.array([]))
+
+# TODO do
 # -------------------
 print('-------------------')
 dataset.revertFromTemporalValues()
