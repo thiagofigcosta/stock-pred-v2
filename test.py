@@ -21,6 +21,7 @@ dataset=Dataset(name='OriginalGE')
 dataset.addCompany(stock_value)
 print('Len:',dataset.getSize())
 dataset.printRawValues()
+print('Values:',dataset.getValues())
 # -------------------
 print('-------------------')
 dataset=Dataset(name='OriginalGE')
@@ -44,12 +45,33 @@ print('Indexes:',dataset.getIndexes())
 print('Values:',dataset.getValues())
 # -------------------
 print('-------------------')
-stock_value_2=[el+1 for el in stock_value]
-dataset=Dataset(name='OriginalGE and OriginalGE+1')
-dataset.addCompany(stock_value)
-dataset.addCompany(stock_value_2)
+print('Train data:')
+start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays()
+print('Neural Network Start Index:',start_index)
+print('Neural Network X Shape:',dataset_x.shape)
+print('Neural Network Y Shape:',dataset_y.shape)
+print()
+print('Full data:')
+start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays(include_test_data=True)
+print('Neural Network Start Index:',start_index)
+print('Neural Network X Shape:',dataset_x.shape)
+print('Neural Network Y Shape:',dataset_y.shape)
+print()
+print('To predict data:')
+start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays(only_test_data=True)
+print('Neural Network Start Index:',start_index)
+print('Neural Network X Shape:',dataset_x.shape)
+print('Neural Network Y Shape:',dataset_y.shape)
+# -------------------
+print('-------------------')
+stock_value_2=[-el for el in stock_value]
+dataset=Dataset(name='OriginalGE and OriginalGE*-1')
+dataset.addCompany(stock_value,dates,features_values)
+dataset.addCompany(stock_value_2,dates,features_values)
 print('Len:',dataset.getSize())
 dataset.printRawValues()
+print('Indexes:',dataset.getIndexes())
+print('Values:',dataset.getValues())
 # -------------------
 print('-------------------')
 dataset.convertToTemporalValues(3,2)
@@ -57,24 +79,26 @@ print('Len:',dataset.getSize())
 dataset.printRawValues()
 print('Indexes:',dataset.getIndexes())
 print('Values:',dataset.getValues())
-
-
-
-
-
-
-
-
-
-
-
 # -------------------
 print('-------------------')
-dataset_x,dataset_y=dataset.getNeuralNetworkArrays()
+print('Train data:')
+start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays()
+print('Neural Network Start Index:',start_index)
 print('Neural Network X Shape:',dataset_x.shape)
 print('Neural Network Y Shape:',dataset_y.shape)
-print('Neural Network X:',dataset_x)
-print('Neural Network Y:',dataset_y)
+print()
+print('Full data:')
+start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays(include_test_data=True)
+print('Neural Network Start Index:',start_index)
+print('Neural Network X Shape:',dataset_x.shape)
+print('Neural Network Y Shape:',dataset_y.shape)
+print()
+print('To predict data:')
+start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays(only_test_data=True)
+print('Neural Network Start Index:',start_index)
+print('Neural Network X Shape:',dataset_x.shape)
+print('Neural Network Y Shape:',dataset_y.shape)
+
 
 # -------------------
 print('-------------------')

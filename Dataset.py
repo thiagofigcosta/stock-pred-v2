@@ -1,19 +1,21 @@
 #!/bin/python3
 # -*- coding: utf-8 -*-
 
+import numpy as np
 from Utils import Utils
 
 class Dataset:
 	class Entry:
-		def __init__(self,index=None,date_index=None,stock_value=None,features=None,backward_values=[],forward_values=None,has_only_indexes=False):
+		def __init__(self,index=None,date_index=None,stock_value=None,features=None,backward_values=[],forward_values=None,has_only_indexes=False,has_only_previous_values=False):
 			self.index=index # of position 0 backward value
 			self.date_index=date_index # of position 0 backward value
 			self.has_only_indexes=has_only_indexes
+			self.has_only_previous_values=has_only_previous_values
 			if stock_value is not None:
-				backward_values=[[stock_value]]
+				backward_values=[[[stock_value]]]
 				forward_values=None
 				if features is not None:
-					backward_values[0]+=features
+					backward_values[0][0]+=features
 			self.backward_values=backward_values # 2d array of values
 			self.forward_values=forward_values # 2d array of values
 			self.next=None # next entry
@@ -52,8 +54,8 @@ class Dataset:
 				elif cur.index is not None:
 					to_print+=str(cur.index)+': '
 				to_print+=str(cur.backward_values)
-				if cur.forward_values:
-					to_print+='->'+str(cur.forward_values)
+				if cur.forward_values is not None:
+					to_print+=' -> '+str(cur.forward_values)
 				print(to_print)
 				i+=1
 				if cur.next is None:
@@ -105,7 +107,13 @@ class Dataset:
 				if cur.next is None:
 					break
 				cur=cur.next
-			return val_arr
+			val_arr_filtered=[]
+			for el in val_arr:
+				for i in range(2):
+					if type(el) is list and len(el)==1:
+						el=el[0]
+				val_arr_filtered.append(el)
+			return val_arr_filtered
 
 		def getIndexes(self,degree=0,int_index=False,get_all=False):
 			idx_arr=[]
@@ -150,7 +158,7 @@ class Dataset:
 		new_first=None
 		cur=new_first
 		for i in range(back_samples-1):
-			new_el=Dataset.Entry(index=i,date_index=dates[i],backward_values=[values[i]])
+			new_el=Dataset.Entry(index=i,date_index=dates[i],backward_values=[values[i]],has_only_previous_values=True)
 			if new_first is None:
 				new_first=new_el
 				cur=new_first
@@ -167,8 +175,9 @@ class Dataset:
 				back_values=[]
 				for j in range(back_samples):
 					back_values.append(values[back_samples+i-j-1].copy())
-				for_values=[]
+				for_values=None
 				if i<new_useful_size:
+					for_values=[]
 					for j in range(forward_samples):
 						for_values.append(values[back_samples+i+j].copy())
 				new_el=Dataset.Entry(index=indexes[i],date_index=dates[i],backward_values=back_values,forward_values=for_values)
@@ -197,16 +206,38 @@ class Dataset:
 		raise Exception('TODO code me')
 		self.regenerateIndexes()
 
-	def getNeuralNetworkArrays(self):
+	@staticmethod
+	def splitNeuralNetworkArray(np_array,percentage):
+		raise Exception('TODO not implemented')
+		#return part2_star_index, part1, part2
+
+	def getNeuralNetworkArrays(self,include_test_data=False,only_test_data=False):
 		# (amostras, for/backwards, empresa, features)
-		cur=self
+		if not self.converted:
+			raise Exception('Not converted yet')
+		X=[]
+		Y=[]
+		i=0
+		start_index=None
+		cur=self.data
 		while True:
-			if cur.index==index:
-				return cur
+			if (not only_test_data and (not cur.has_only_indexes and not cur.has_only_previous_values and (cur.forward_values is not None or include_test_data))) or (only_test_data and cur.forward_values is None and not cur.has_only_previous_values and not cur.has_only_indexes):
+				if start_index is None:
+					start_index=i
+				x=np.array(cur.backward_values, ndmin=2, order='C', subok=True)
+				if len(x.shape)==2:
+					x=np.expand_dims(x,axis=2)
+				X.append(x)
+				if cur.forward_values is not None:
+					y=np.array(cur.forward_values, ndmin=2, order='C', subok=True)
+					if len(y.shape)==2:
+						y=np.expand_dims(y,axis=2)
+					Y.append(y)
 			if cur.next is None:
 				break
 			cur=cur.next
-		return None
+			i+=1
+		return start_index,np.array(X, order='C', subok=True),np.array(Y, order='A', subok=True)
 	
 	def addCompany(self,stock_value_array,date_array=None,features_2d_array=None):
 		if self.converted:
@@ -249,9 +280,9 @@ class Dataset:
 				if not cur.has_only_indexes:
 					new_company_values=[cur_stock]
 					if cur_features is not None:
-						new_company_values[0]+=cur_features
+						new_company_values+=cur_features
 					if cur_date is None or cur_date==cur.date_index:
-						cur.backward_values.append(new_company_values)
+						cur.backward_values[0].append(new_company_values)
 				if cur.next is None:
 					break
 				else:
