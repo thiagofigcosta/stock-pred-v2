@@ -118,14 +118,33 @@ class Dataset:
 
 		def getValues(self,degree=0,only_main_value=False):
 			val_arr=[]
+			if degree > 0:
+				cur=self
+				to_break=False
+				i=0
+				while True:
+					if i>=degree and cur.backward_values is not None:
+						if type(cur.backward_values[0][0]) is list:
+							to_append=[]
+							for el in cur.backward_values[0]:
+								to_append.append(el[0])
+							val_arr.append(to_append)
+						else:
+							val_arr.append([cur.backward_values[0][0]])
+					if cur.next is None or to_break:
+						break
+					if cur.forward_values is not None:
+						to_break=True
+					cur=cur.next
+					i+=1
+			if degree == 1:
+				val_arr.pop()
 			cur=self
 			while True:
 				if not cur.has_only_indexes:
 					if degree>0:
 						if cur.forward_values is not None:
 							val_arr.append(cur.forward_values[abs(degree-1)])
-						else:
-							break
 					else:
 						if only_main_value:
 							if type(cur.backward_values[abs(degree)][0]) is list:
@@ -322,7 +341,17 @@ class Dataset:
 	def setNeuralNetworkResultArray(self,start_index,Y):
 		if not self.converted:
 			raise Exception('Not converted yet')
-		raise Exception('TODO code me')
+		starting_point=self.data.getPointerAtIndex(start_index)
+		if starting_point is None:
+			return
+		i=0
+		cur=starting_point
+		while i<len(Y):
+			cur.forward_values=Y[i].tolist()
+			if cur.next is None:
+				break
+			cur=cur.next
+			i+=1
 	
 	def addCompany(self,stock_value_array,date_array=None,features_2d_array=None):
 		if self.converted:

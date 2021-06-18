@@ -3,6 +3,7 @@
 
 import sys
 import time
+import numpy as np
 from Crawler import Crawler
 from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
@@ -102,8 +103,8 @@ print('Neural Network X Shape:',dataset_x.shape)
 print('Neural Network Y Shape:',dataset_y.shape)
 print()
 print('To predict data:')
-start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays(only_test_data=True)
-print('Neural Network Start Index:',start_index)
+start_index_to_pred,dataset_x,dataset_y=dataset.getNeuralNetworkArrays(only_test_data=True)
+print('Neural Network Start Index:',start_index_to_pred)
 print('Neural Network X Shape:',dataset_x.shape)
 print('Neural Network Y Shape:',dataset_y.shape)
 print()
@@ -126,12 +127,22 @@ print('Len:',dataset_reverted.getSize())
 dataset_reverted.printRawValues()
 print('Indexes:',dataset_reverted.getIndexes())
 print('Values:',dataset_reverted.getValues())
-
-
-
-
-
-# TODO do
 # -------------------
 print('-------------------')
-dataset.setNeuralNetworkResultArray(start_index,np.array([]))
+correct_predictions=np.array([[[10, -10], [11, -11]],[[11, -11], [12, -12]]])
+print('Correct preds shape',correct_predictions.shape)
+dataset.setNeuralNetworkResultArray(start_index_to_pred,correct_predictions)
+print('Len:',dataset.getSize())
+dataset.printRawValues()
+print('Indexes:',dataset.getIndexes())
+print('Values:',dataset.getValues())
+print('Indexes degree 1:',dataset.getIndexes(degree=1))
+print('Values degree 1:',dataset.getValues(degree=1))
+print('Indexes degree 2:',dataset.getIndexes(degree=2))
+print('Values degree 2:',dataset.getValues(degree=2))
+
+
+
+# TODO testar revert
+# -------------------
+print('-------------------')
