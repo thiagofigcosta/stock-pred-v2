@@ -92,7 +92,7 @@ class Dataset:
 				cur=cur.next
 			return None
 
-		def getValues(self,degree=0):
+		def getValues(self,degree=0,only_main_value=False):
 			val_arr=[]
 			cur=self
 			while True:
@@ -103,7 +103,16 @@ class Dataset:
 						else:
 							break
 					else:
-						val_arr.append(cur.backward_values[abs(degree)])
+						if only_main_value:
+							if type(cur.backward_values[abs(degree)][0]) is list:
+								to_append=[]
+								for el in cur.backward_values[abs(degree)]:
+									to_append.append(el[0])
+								val_arr.append(to_append)
+							else:
+								val_arr.append([cur.backward_values[abs(degree)][0]])
+						else:	
+							val_arr.append(cur.backward_values[abs(degree)])
 				if cur.next is None:
 					break
 				cur=cur.next
@@ -179,7 +188,18 @@ class Dataset:
 				if i<new_useful_size:
 					for_values=[]
 					for j in range(forward_samples):
-						for_values.append(values[back_samples+i+j].copy())
+						future_vals=[]
+						for k in range(len(values[back_samples+i+j])):
+							future_val=values[back_samples+i+j][k]
+							to_break=False
+							if type(future_val) is list:
+								future_val=future_val[0]
+							else:
+								to_break=True
+							future_vals.append(future_val) 
+							if to_break:
+								break
+						for_values.append(future_vals.copy())
 				new_el=Dataset.Entry(index=indexes[i],date_index=dates[i],backward_values=back_values,forward_values=for_values)
 			else:
 				new_el=Dataset.Entry(index=indexes[i],date_index=dates[i],backward_values=None,forward_values=None,has_only_indexes=True)
@@ -207,12 +227,15 @@ class Dataset:
 		self.regenerateIndexes()
 
 	@staticmethod
-	def splitNeuralNetworkArray(np_array,percentage):
-		raise Exception('TODO not implemented')
-		#return part2_star_index, part1, part2
+	def splitNeuralNetworkArray(np_array,p1_percentage):
+		if p1_percentage<0 or p1_percentage>1:
+			raise Exception('Invalid percentage ({})'.format(p1_percentage))
+		part2_index=int(len(np_array)*p1_percentage)
+		return part2_index, np_array[:part2_index], np_array[part2_index:]
 
 	def getNeuralNetworkArrays(self,include_test_data=False,only_test_data=False):
-		# (samples, for/backwards, company, features)
+		# X (samples, for/backwards, company, features)
+		# Y (samples, for/backwards, company)
 		if not self.converted:
 			raise Exception('Not converted yet')
 		X=[]
@@ -231,9 +254,6 @@ class Dataset:
 				X.append(x)
 				if cur.forward_values is not None:
 					y=np.array(cur.forward_values, ndmin=2, order='C', subok=True)
-					if len(y.shape)==2:
-						y=np.flip(y, 1)
-						y=np.expand_dims(y,axis=1)
 					Y.append(y)
 			if cur.next is None:
 				break
@@ -301,8 +321,8 @@ class Dataset:
 	def getSize(self,consider_indexes=False):
 		return self.data.getSize(consider_indexes=consider_indexes)
 
-	def getValues(self,degree=0):
-		return self.data.getValues(degree=degree)
+	def getValues(self,degree=0,only_main_value=False):
+		return self.data.getValues(degree=degree,only_main_value=only_main_value)
 
 	def getIndexes(self,degree=0,int_index=False,get_all=False):
 		return self.data.getIndexes(degree=degree,int_index=int_index,get_all=get_all)
