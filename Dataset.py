@@ -212,7 +212,7 @@ class Dataset:
 		#return part2_star_index, part1, part2
 
 	def getNeuralNetworkArrays(self,include_test_data=False,only_test_data=False):
-		# (amostras, for/backwards, empresa, features)
+		# (samples, for/backwards, company, features)
 		if not self.converted:
 			raise Exception('Not converted yet')
 		X=[]
@@ -226,12 +226,14 @@ class Dataset:
 					start_index=i
 				x=np.array(cur.backward_values, ndmin=2, order='C', subok=True)
 				if len(x.shape)==2:
-					x=np.expand_dims(x,axis=2)
+					x=np.flip(x, 1)
+					x=np.expand_dims(x,axis=1)
 				X.append(x)
 				if cur.forward_values is not None:
 					y=np.array(cur.forward_values, ndmin=2, order='C', subok=True)
 					if len(y.shape)==2:
-						y=np.expand_dims(y,axis=2)
+						y=np.flip(y, 1)
+						y=np.expand_dims(y,axis=1)
 					Y.append(y)
 			if cur.next is None:
 				break
