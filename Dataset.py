@@ -70,7 +70,28 @@ class Dataset:
 				cur=cur.next
 			return size
 
-		def printRawValues(self):
+		def getAbsMaxes(self):
+			max_vals=[]
+			cur=self
+			amount_of_features=None
+			while True:
+				if not cur.has_only_indexes:
+					if cur.backward_values is not None:
+						if amount_of_features is None:
+							print(cur.backward_values)
+							amount_of_features=len(cur.backward_values[0][0])
+							max_vals=[0]*amount_of_features
+						for a in cur.backward_values:
+							for b in a:
+								for i,c in enumerate(b):
+									if abs(c)>max_vals[i]:
+										max_vals[i]=c
+				if cur.next is None:
+					break
+				cur=cur.next
+			return tuple(max_vals)
+
+		def print(self):
 			i=0
 			size=self.getSize(consider_indexes=True)
 			cur=self
@@ -123,7 +144,7 @@ class Dataset:
 				cur=cur.next
 			return None
 
-		def getValues(self,degree=0,only_main_value=False):
+		def getValues(self,degree=0,only_main_value=False,no_simplification=False):
 			val_arr=[]
 			if degree > 0:
 				cur=self
@@ -166,6 +187,8 @@ class Dataset:
 				if cur.next is None:
 					break
 				cur=cur.next
+			if no_simplification:
+				return val_arr
 			val_arr_filtered=[]
 			for el in val_arr:
 				for i in range(2):
@@ -229,7 +252,7 @@ class Dataset:
 		if self.converted:
 			raise Exception('Already converted')
 		self.converted=not self.converted
-		values=self.getValues()
+		values=self.getValues(no_simplification=True)
 		size=self.getSize()
 		new_size=size-back_samples+1
 		new_useful_size=size-back_samples+1-forward_samples
@@ -297,7 +320,7 @@ class Dataset:
 		back_samples,forward_samples=self.converted_params
 		self.converted_params=tuple()
 		# get current values
-		values=self.getValues()
+		values=self.getValues(no_simplification=True)
 		dates=self.getIndexes(get_all=True)
 		# get future values 
 		cur=self.data
@@ -463,17 +486,17 @@ class Dataset:
 		if first_company:
 			self.data.regenerateIndexes()
 
-	def printRawValues(self):
+	def print(self):
 		print('Name: '+self.name)
 		print('Converted:',self.converted)
 		print('Data: ')
-		self.data.printRawValues()
+		self.data.print()
 
 	def getSize(self,consider_indexes=False):
 		return self.data.getSize(consider_indexes=consider_indexes)
 
-	def getValues(self,degree=0,only_main_value=False):
-		return self.data.getValues(degree=degree,only_main_value=only_main_value)
+	def getValues(self,degree=0,only_main_value=False,no_simplification=False):
+		return self.data.getValues(degree=degree,only_main_value=only_main_value,no_simplification=no_simplification)
 
 	def getIndexes(self,degree=0,int_index=False,get_all=False):
 		return self.data.getIndexes(degree=degree,int_index=int_index,get_all=get_all)
@@ -487,6 +510,9 @@ class Dataset:
 		new_dataset.converted_params=self.converted_params+tuple() # tuple copy
 		new_dataset.data=self.data.copy()
 		return new_dataset
+	
+	def getAbsMaxes(self):
+		return self.data.getAbsMaxes()
 
 	def __init__(self,name):
 		self.name=name
