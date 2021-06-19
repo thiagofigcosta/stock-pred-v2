@@ -166,10 +166,11 @@ dataset.convertToTemporalValues(3,2)
 print('Max:',dataset.getAbsMaxes())
 
 # TODO code normalization:
-    # store the maxes on the dataset (add option to use external ones)
+    # store the maxes on the dataset
     # create enum for the methods
             # method 0: nothing to do
             # method 1: normalize just before export
             # method 2: normalize just before export but increase x% on first max
+            # method 3: use external maxes
 
 # TODO code denormalization
