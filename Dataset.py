@@ -6,11 +6,14 @@ from Utils import Utils
 
 class Dataset:
 	class Entry:
-		def __init__(self,index=None,date_index=None,stock_value=None,features=None,backward_values=[],forward_values=None,has_only_indexes=False,has_only_previous_values=False):
+		def __init__(self,index=None,date_index=None,stock_value=None,features=None,backward_values=[],forward_values=None,has_only_indexes=False,has_only_previous_values=False,predicted_values=False):
 			self.index=index # of position 0 backward value
 			self.date_index=date_index # of position 0 backward value
 			self.has_only_indexes=has_only_indexes
 			self.has_only_previous_values=has_only_previous_values
+			self.predicted_values=predicted_values
+			if predicted_values:
+				self.has_only_indexes=True
 			if stock_value is not None:
 				backward_values=[[[stock_value]]]
 				forward_values=None
@@ -32,7 +35,7 @@ class Dataset:
 				cur_forward_values=None
 				if cur.forward_values is not None:
 					cur_forward_values=cur.forward_values.copy()
-				new_entry=Dataset.Entry(index=cur.index,date_index=cur.date_index,has_only_indexes=cur.has_only_indexes,has_only_previous_values=cur.has_only_previous_values,backward_values=cur_backward_values,forward_values=cur_forward_values)
+				new_entry=Dataset.Entry(index=cur.index,date_index=cur.date_index,has_only_indexes=cur.has_only_indexes,has_only_previous_values=cur.has_only_previous_values,predicted_values=cur.predicted_values,backward_values=cur_backward_values,forward_values=cur_forward_values)
 				if first is None:
 					first=new_entry
 					previous_entry=new_entry
@@ -74,9 +77,13 @@ class Dataset:
 			while i<size:
 				to_print=''
 				if cur.date_index is not None:
-					to_print+=str(cur.date_index)+': '
+					to_print+=str(cur.date_index)
 				elif cur.index is not None:
-					to_print+=str(cur.index)+': '
+					to_print+=str(cur.index)
+				if cur.predicted_values:
+					to_print+=' *pred*'
+				if cur.date_index is not None or cur.index is not None:
+					to_print+=': '
 				to_print+=str(cur.backward_values)
 				if cur.forward_values is not None:
 					to_print+=' -> '+str(cur.forward_values)
@@ -191,6 +198,32 @@ class Dataset:
 				if to_remove>0:
 					idx_arr=idx_arr[:-to_remove]
 			return idx_arr
+
+	def getDatesAndPredictions(self):
+		if self.converted:
+			raise Exception('Already converted, please fill the predictions from NN and revert')
+		idx_arr=[]
+		pred_arr=[]
+		cur=self.data
+		while True:
+			if cur.predicted_values:
+				if cur.date_index is None:
+					idx_arr.append(cur.index)
+				else:
+					idx_arr.append(cur.date_index)
+				cur_backward_values=cur.backward_values.copy()
+				if type(cur_backward_values) is list:
+					if len(cur_backward_values)==1:
+						cur_backward_values=cur_backward_values[0]
+					else:
+						for i,el in enumerate(cur_backward_values):
+							if len(el)==1:
+								cur_backward_values[i]=el[0]
+				pred_arr.append(cur_backward_values)
+			if cur.next is None:
+				break
+			cur=cur.next
+		return idx_arr,pred_arr
 			
 	def convertToTemporalValues(self,back_samples,forward_samples):
 		if self.converted:
@@ -268,12 +301,34 @@ class Dataset:
 		dates=self.getIndexes(get_all=True)
 		# get future values 
 		cur=self.data
+		missing_values=[]
+		has_future=True
 		while True:
-			if cur.forward_values is None and not cur.has_only_previous_values and not cur.has_only_indexes and cur.forward_values is not None:
-				values.append(cur.forward_values)
+			if not cur.has_only_previous_values and not cur.has_only_indexes:
+				if cur.forward_values is not None:
+					missing_values.append(cur.forward_values)
+				else:
+					has_future=False
+					break
 			if cur.next is None:
 				break
 			cur=cur.next
+		if has_future:
+			missing_values=missing_values[-forward_samples:]
+			future_list=[[]]
+			for i,list_of_preds in enumerate(missing_values):
+				for j,el in enumerate(list_of_preds):
+					idx=i*forward_samples+j
+					if idx>=back_samples-forward_samples:
+						future_list[-1].append(el)
+						if len(future_list[-1])>=forward_samples:
+							future_list.append([])
+			amount_of_companies=len(future_list[0])
+			for lists in future_list:
+				new_list=[ [] for _ in range(amount_of_companies) ]
+				for j,el in enumerate(lists):
+					new_list[j].append(el)
+				values.append(new_list)
 
 		values_len=float('inf')
 		if values is not None:
@@ -289,11 +344,15 @@ class Dataset:
 			if dates is not None:
 				cur_date=dates[i]
 			cur_values=values[i]
+			predicted=False
 			if type(cur_values[0]) is list:
-				cur_values=[cur_values]
+				if type(cur_values[0][0]) is not list:
+					cur_values=[cur_values]
+				else:
+					predicted=True
 			else:
 				cur_values=[[cur_values]]
-			entry=Dataset.Entry(index=i,date_index=cur_date,backward_values=cur_values)
+			entry=Dataset.Entry(index=i,date_index=cur_date,backward_values=cur_values,predicted_values=predicted)
 			if cur is None:
 				cur=entry
 			else:
@@ -428,7 +487,7 @@ class Dataset:
 		new_dataset.converted_params=self.converted_params+tuple() # tuple copy
 		new_dataset.data=self.data.copy()
 		return new_dataset
-	
+
 	def __init__(self,name):
 		self.name=name
 		self.data=None

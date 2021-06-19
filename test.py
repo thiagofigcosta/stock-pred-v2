@@ -140,9 +140,17 @@ print('Indexes degree 1:',dataset.getIndexes(degree=1))
 print('Values degree 1:',dataset.getValues(degree=1))
 print('Indexes degree 2:',dataset.getIndexes(degree=2))
 print('Values degree 2:',dataset.getValues(degree=2))
-
-
-
-# TODO testar revert
 # -------------------
 print('-------------------')
+dataset_reverted=dataset.copy()
+dataset_reverted.name+=' copy'
+dataset_reverted.revertFromTemporalValues()
+print('Len:',dataset_reverted.getSize())
+dataset_reverted.printRawValues()
+print('Indexes:',dataset_reverted.getIndexes())
+print('Values:',dataset_reverted.getValues())
+print()
+indexes,preds=dataset_reverted.getDatesAndPredictions()
+print('Pred Indexes:',indexes)
+print('Pred Values:',preds)
+print('\t*Inner dimmension = companies | After inner dimmension = multiple predictions')
