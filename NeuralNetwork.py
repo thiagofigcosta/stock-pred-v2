@@ -5,7 +5,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3' # DISABLE TENSORFLOW WARNING
 from Hyperparameters import Hyperparameters
 from Dataset import Dataset
-from DatasetOld import DatasetOld
+from NNDatasetContainer import NNDatasetContainer
 from Utils import Utils
 from Actuator import Actuator
 import pandas as pd
@@ -78,7 +78,7 @@ class NeuralNetwork:
 		print('Model History saved at {};'.format(self.getModelPath(self.filenames['history'])))
 		
 	def train(self):
-		self.history=self.model.fit(self.data.train.features,self.data.train.labels,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val.features,self.data.val.labels),batch_size=self.hyperparameters.batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
+		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=self.hyperparameters.batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
 		self.parseHistoryToVanilla()
 		self.statefulModelWorkaround()
 
@@ -285,26 +285,28 @@ class NeuralNetwork:
 		self.history=new_hist
 
 	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False):
-		self.loadDatasetOld(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0)
+		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0)
 
 	# company_index_array defines which dataset files are from each company, enables to load multiple companies and use multiple files for the same company
 	# from_date format : '01/03/2002'
-	def loadDatasetOld(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None):
+	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None):
 		if type(paths)!=list:
 			paths=[paths]
-
 		if train_percent is None:
 			train_percent=self.hyperparameters.train_percent
 		if val_percent is None:
 			val_percent=self.hyperparameters.val_percent
 
-		full_data=[]
 		amount_of_companies=len(set(company_index_array))
 		if amount_of_companies!=self.hyperparameters.amount_companies:
 			raise Exception('Amount of dataset companies different from the hyperparameters amount of companies')
+		if len(company_index_array)!=len(paths):
+			raise Exception('Company index array ({}) must have the same lenght than Paths array ({}) '.format(len(company_index_arary),len(paths)))
+
+		# load raw data
+		full_data=[]
+		dataset_name=''
 		if amount_of_companies>1:
-			if len(company_index_array)!=len(paths):
-				raise Exception('Company index array ({}) must have the same lenght than Paths array ({}) '.format(len(company_index_arary),len(paths)))
 			dataset_name=[]
 			frames=[]
 			last_company=None
@@ -333,14 +335,17 @@ class NeuralNetwork:
 			for path in paths:
 				frames.append(pd.read_csv(path))
 			full_data.append(pd.concat(frames))
+
+		# get loaded data arrays
 		fields=self.hyperparameters.input_features.copy()
+		extra_fields=self.hyperparameters.input_features.copy()
 		if self.hyperparameters.output_feature not in fields:
 			fields.append(self.hyperparameters.output_feature)
-		fields.remove(self.hyperparameters.output_feature)
-		fields.append(self.hyperparameters.output_feature) # ensure that the last one is the result field
-
+		extra_fields.remove(self.hyperparameters.output_feature)
+		datasets_to_load=[]
+		extra_dataset_name=''
 		for i in range(len(full_data)):
-			date_index_array=None
+			dataset_to_load={'dates':None,'main_feature':None,'other_features':None}
 			if self.hyperparameters.index_feature is not None:
 				date_index_array = pd.to_datetime(full_data[i][self.hyperparameters.index_feature])
 				if from_date is not None:
@@ -348,125 +353,57 @@ class NeuralNetwork:
 					date_index_array=date_index_array[date_index_array >= from_date_formated]
 				full_data[i][self.hyperparameters.index_feature] = date_index_array
 				full_data[i].set_index(self.hyperparameters.index_feature, inplace=True)
+				dataset_to_load['dates']=[date.strftime('%d/%m/%Y') for date in date_index_array]
 			full_data[i]=full_data[i][fields]
 			if from_date is not None:
 				full_data[i]=full_data[i][pd.to_datetime(from_date,format=Utils.DATE_FORMAT):]
 				d,m,y=Utils.extractNumbersFromDate(from_date)
-				dataset_name+='trunc{}{}{}'.format(y,m,d)
+				extra_dataset_name='trunc{}{}{}'.format(y,m,d)
+			dataset_to_load['main_feature']=full_data[i][self.hyperparameters.output_feature].to_list()
+			if len(extra_fields)>0:
+				dataset_to_load['other_features']=full_data[i][extra_fields].to_list()
+			datasets_to_load.append(dataset_to_load)	
+
 			if plot:
 				if amount_of_companies==1 :
 					label='Stock Values of {}'.format(dataset_name)
 				else:
 					label='Stock Values Company {} from {}'.format(i+1,dataset_name)
-				
 				plt.plot(full_data[i], label=label)
 				plt.legend(loc='best')
 				plt.show()
 
-		if amount_of_companies==1:
-			full_data=full_data[0].values.reshape(full_data[0].shape[0],len(fields))
-		else:
-			full_data=Utils.truncateArraysOnCommonIndexes(full_data)
-			date_index_array=full_data[0].index
-			for i in range(len(full_data)):
-				full_data[i]=full_data[i].values.reshape(full_data[i].shape[0],len(fields))
-			
-			tuple_of_companies=tuple(full_data)
-			full_data = np.concatenate((tuple_of_companies), axis=1)
-
-		unitedScaler = MinMaxScaler(feature_range=(0, 1))
-		if self.hyperparameters.normalize:
-			unitedScaler = unitedScaler.fit(full_data)
-			if self.verbose:
-				print('Min: {}, Max: {}'.format(unitedScaler.data_min_, unitedScaler.data_max_))
-			full_plot_data = unitedScaler.transform(full_data)
-			if len(self.hyperparameters.input_features) == 1:
-				full_data=full_plot_data
-			if plot:
-				plt.plot(full_plot_data, label='Stock Values of {} normalized'.format(dataset_name))
-				plt.legend(loc='best')
-				plt.show()
-		while full_data.shape[0]<self.hyperparameters.backwards_samples+self.hyperparameters.forward_samples: # TODO gambiarra q nao funciona
-			full_data = np.insert(full_data,0,full_data[0],axis=0)
-			raise Exception ('Please, increase the amount of data (\'from_date\')') # TODO remove
-		data_size=len(full_data)
-
-		X_full_data=[]
-		Y_full_data=[]
-		if amount_of_companies==1 :
-			for i in range(self.hyperparameters.backwards_samples,data_size-self.hyperparameters.forward_samples+1):
-				X_full_data.append(np.array([x[:len(self.hyperparameters.input_features)] for x in full_data[i-self.hyperparameters.backwards_samples:i]]))
-				Y_full_data.append(np.array([x[-1] for x in full_data[i:i+self.hyperparameters.forward_samples]]))
-			# going beyond labels
-			for i in range(data_size-self.hyperparameters.forward_samples+1,data_size+1):
-				X_full_data.append(np.array([x[:len(self.hyperparameters.input_features)] for x in full_data[i-self.hyperparameters.backwards_samples:i]]))
-		else:
-			for i in range(self.hyperparameters.backwards_samples,data_size-self.hyperparameters.forward_samples+1):
-				X_full_data.append(np.array([Utils.extractElementsFromInsideLists(x) for x in full_data[i-self.hyperparameters.backwards_samples:i]]))
-				Y_full_data.append(np.array([Utils.extractElementsFromInsideLists(x,last_instead_of_all_but_last=True) for x in full_data[i:i+self.hyperparameters.forward_samples]]))
-			# going beyond labels
-			for i in range(data_size-self.hyperparameters.forward_samples+1,data_size+1):
-				X_full_data.append(np.array([Utils.extractElementsFromInsideLists(x) for x in full_data[i-self.hyperparameters.backwards_samples:i]]))
-		X_full_data=np.array(X_full_data)
-		Y_full_data=np.array(Y_full_data)
+		# truncate multiple companies
 		if amount_of_companies>1:
-			Y_shape=Y_full_data.shape
-			Y_full_data = Y_full_data.reshape(Y_shape[0], Y_shape[1]*Y_shape[2])
-		
-		if len(self.hyperparameters.input_features) > 1 or amount_of_companies>1:
-			scalerX = MinMaxScaler(feature_range=(0, 1))
-			scalerY = MinMaxScaler(feature_range=(0, 1))
-			if self.hyperparameters.normalize:
-				instances, time_steps, features = X_full_data.shape
-				X_full_data = np.reshape(X_full_data, newshape=(-1, features))
-				scalerX = scalerX.fit(X_full_data)
-				scalerY = scalerY.fit(Y_full_data)
-				X_full_data = scalerX.transform(X_full_data)
-				Y_full_data = scalerY.transform(Y_full_data)
-				X_full_data = np.reshape(X_full_data, newshape=(instances, time_steps, features))
-			firstScaler=scalerX
-			secondScaler=scalerY
-		else:
-			firstScaler=unitedScaler
-			secondScaler=None
-		
-		train_idx=int(len(X_full_data)*train_percent)
+			first_common_date=None
+			if datasets_to_load[0]['dates'] is not None:
+				first_common_date=datasets_to_load[0]['dates'][0]
+			minimum_size=len(datasets_to_load[0]['main_feature'])
+			for dataset in datasets_to_load:
+				if len(dataset['main_feature']) < minimum_size:
+					minimum_size=len(dataset['main_feature'])
+					if dataset['dates'] is not None:
+						first_common_date=dataset['dates'][0]
+			if first_common_date is not None:
+				d,m,y=Utils.extractNumbersFromDate(first_common_date)
+				extra_dataset_name='trunc{}{}{}'.format(y,m,d)
+			for i in range(len(datasets_to_load)):
+				datasets_to_load[i]['main_feature']=datasets_to_load[i]['main_feature'][-minimum_size:]
+				if datasets_to_load[i]['dates'] is not None:
+					datasets_to_load[i]['dates']=datasets_to_load[i]['dates'][-minimum_size:]
+				if datasets_to_load[i]['other_features'] is not None:
+					datasets_to_load[i]['other_features']=datasets_to_load[i]['other_features'][-minimum_size:]
+		dataset_name+=extra_dataset_name
 
-		X_train_full=X_full_data[:train_idx]
-		Y_train_full=Y_full_data[:train_idx]
-		X_test=X_full_data[train_idx:]
-		Y_test=Y_full_data[train_idx:]
-		X_val=[]
-		Y_val=[]
-		
-		date_index_array=date_index_array.tolist()
-		train_date_index=date_index_array[:train_idx+self.hyperparameters.backwards_samples+1]
-		test_date_index=date_index_array[train_idx:]
-		minutes_step=int(Utils.computeArrayIntervals(date_index_array)*60)
-		last_date=date_index_array[len(date_index_array)-1].to_numpy()
-		for i in range(1,self.hyperparameters.forward_samples):
-			new_date=pd.to_datetime(last_date+np.timedelta64(minutes_step*i,'m'))
-			test_date_index.append(new_date)
-		
-		if val_percent>0:
-			X_train,X_val,Y_train,Y_val = train_test_split(X_train_full, Y_train_full, test_size=val_percent)
-		else:
-			X_train=X_train_full
-			Y_train=Y_train_full
-		
-		scalers=[firstScaler]
-		if secondScaler is not None:
-			scalers.insert(0,secondScaler)
-
-		print('X_train',X_train.shape)
-		print('Y_train',Y_train.shape)
-		print()
-		print('X_val',X_val.shape)
-		print('Y_val',Y_val.shape)
-		print()
-		print('X_test',X_test.shape)
-		print('Y_test',Y_test.shape)
+		# parse dataset
+		parsed_dataset=Dataset(name='dataset_name')
+		for dataset in datasets_to_load:
+			parsed_dataset.addCompany(dataset['main_feature'],date_array=dataset['dates'],features_2d_array=dataset['other_features'])
 
 		if self.data is not None:
-			scalers=self.data.scalers
-		self.data=DatasetOld(dataset_name,scalers,X_train,Y_train,X_val,Y_val,X_test,Y_test,X_train_full,Y_train_full,train_date_index,test_date_index)
+			scaler=self.data.scaler
+		else:
+			scaler=tuple()
+		self.data=NNDatasetContainer(parsed_dataset,scaler,train_percent,val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
+		self.data.deployScaler()
+		self.data.generateNNArrays()

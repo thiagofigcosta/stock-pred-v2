@@ -115,7 +115,7 @@ def main(argv):
 		# build and train
 		neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
 		if not neuralNetwork.checkTrainedModelExists():
-			neuralNetwork.loadDatasetOld(filepaths[stock],plot=False)
+			neuralNetwork.loadDataset(filepaths[stock],plot=False)
 			neuralNetwork.buildModel()
 			neuralNetwork.train()
 			neuralNetwork.eval(plot=True,plot_training=True)

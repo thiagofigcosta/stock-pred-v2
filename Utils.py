@@ -249,3 +249,7 @@ class Utils:
 		for i in range(n):
 			array.append(array[-1]+diff)
 		return array
+
+	@staticmethod
+	def changeDateFormat(date,in_format,out_format):
+		return dt.datetime.strptime(date, in_format).strftime(out_format)

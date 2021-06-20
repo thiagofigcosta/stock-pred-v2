@@ -393,10 +393,13 @@ class Dataset:
 		self.regenerateIndexes()
 
 	@staticmethod
-	def splitNeuralNetworkArray(np_array,p1_percentage):
-		if p1_percentage<0 or p1_percentage>1:
+	def splitNeuralNetworkArray(np_array,p1_percentage=None,part2_index=None):
+		if p1_percentage is not None and (p1_percentage<0 or p1_percentage>1):
 			raise Exception('Invalid percentage ({})'.format(p1_percentage))
-		part2_index=int(len(np_array)*p1_percentage)
+		if p1_percentage is None and part2_index is None:
+			raise Exception('proveide either p1_percentage or part2_index')
+		if part2_index is None:
+			part2_index=int(len(np_array)*p1_percentage)
 		return part2_index, np_array[:part2_index], np_array[part2_index:]
 
 	def getNeuralNetworkArrays(self,include_test_data=False,only_test_data=False,normalization=Normalization.DONT_NORMALIZE,external_maxes=None):
@@ -457,7 +460,7 @@ class Dataset:
 	def setNeuralNetworkResultArray(self,start_index,Y):
 		if not self.converted:
 			raise Exception('Not converted yet')
-		normalize = self.normalization_method in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP,Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES)
+		normalize = self.normalization_method is not None and self.normalization_method in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP,Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES)
 		if normalize and (self.normalization_params is None or len(self.normalization_params)==0):
 			raise Exception('No normalization params found')
 		if normalize:
