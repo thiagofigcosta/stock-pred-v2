@@ -164,13 +164,15 @@ print('Max:',dataset.getAbsMaxes())
 print('-------------------')
 dataset.convertToTemporalValues(3,2)
 print('Max:',dataset.getAbsMaxes())
-
-# TODO code normalization:
-    # store the maxes on the dataset
-    # create enum for the methods
-            # method 0: nothing to do
-            # method 1: normalize just before export
-            # method 2: normalize just before export but increase x% on first max
-            # method 3: use external maxes
-
-# TODO code denormalization
+# -------------------
+print('-------------------')
+start_index,dataset_x,dataset_y=dataset.getNeuralNetworkArrays(include_test_data=True,normalization=Dataset.Normalization.NORMALIZE)
+print('Neural Network X 0:',dataset_x[0].tolist())
+print('Neural Network Y 0:',dataset_y[0].tolist())
+# -------------------
+print('-------------------')
+correct_predictions=np.array([[[1, -1], [1.1, -1.1]],[[1.1, -1.1], [1.2, -1.2]]])
+print('Correct preds shape',correct_predictions.shape)
+dataset.setNeuralNetworkResultArray(start_index_to_pred,correct_predictions)
+print('Len:',dataset.getSize())
+dataset.print()

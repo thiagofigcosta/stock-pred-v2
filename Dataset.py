@@ -2,9 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from enum import Enum
 from Utils import Utils
 
 class Dataset:
+	class Normalization(Enum):
+		DONT_NORMALIZE=0
+		NORMALIZE=1
+		NORMALIZE_WITH_GAP=2
+		NORMALIZE_WITH_EXTERNAL_MAXES=3
+
 	class Entry:
 		def __init__(self,index=None,date_index=None,stock_value=None,features=None,backward_values=[],forward_values=None,has_only_indexes=False,has_only_previous_values=False,predicted_values=False):
 			self.index=index # of position 0 backward value
@@ -392,11 +399,26 @@ class Dataset:
 		part2_index=int(len(np_array)*p1_percentage)
 		return part2_index, np_array[:part2_index], np_array[part2_index:]
 
-	def getNeuralNetworkArrays(self,include_test_data=False,only_test_data=False):
+	def getNeuralNetworkArrays(self,include_test_data=False,only_test_data=False,normalization=Normalization.DONT_NORMALIZE,external_maxes=None):
 		# X (samples, for/backwards, company, features)
 		# Y (samples, for/backwards, company)
 		if not self.converted:
 			raise Exception('Not converted yet')
+		normalize=False
+		self.normalization_method=normalization
+		if normalization in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP):
+			maxes=self.getAbsMaxes()
+			if normalization == Dataset.Normalization.NORMALIZE_WITH_GAP:
+				for i in range(len(maxes)):
+					maxes[i]*=1.1 # gap percentage
+			self.normalization_params=maxes
+			normalize=True
+		if normalization == Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES:
+			if external_maxes is None or type(external_maxes) is not tuple:
+				raise Exception('Provide an external maxes tuple')
+			self.normalization_params=external_maxes
+			normalize=True
+			
 		X=[]
 		Y=[]
 		i=0
@@ -406,23 +428,44 @@ class Dataset:
 			if (not only_test_data and (not cur.has_only_indexes and not cur.has_only_previous_values and (cur.forward_values is not None or include_test_data))) or (only_test_data and cur.forward_values is None and not cur.has_only_previous_values and not cur.has_only_indexes):
 				if start_index is None:
 					start_index=i
-				x=np.array(cur.backward_values, ndmin=2, order='C', subok=True)
+				x=np.array(cur.backward_values, ndmin=2, order='C', subok=True, dtype=float)
 				if len(x.shape)==2:
 					x=np.flip(x, 1)
 					x=np.expand_dims(x,axis=1)
+				if normalize:
+					for a,el_1 in enumerate(x):
+						if type(el_1) in (list,np.ndarray):
+							for b,el_2 in enumerate(el_1):
+								if type(el_2) in (list,np.ndarray):
+									for c,el_3 in enumerate(el_2):
+										x[a][b][c]=el_3/float(self.normalization_params[c])
 				X.append(x)
 				if cur.forward_values is not None:
-					y=np.array(cur.forward_values, ndmin=2, order='C', subok=True)
+					y=np.array(cur.forward_values, ndmin=2, order='C', subok=True, dtype=float)
+					if normalize:
+						for a,el_1 in enumerate(y):
+							if type(el_1) in (list,np.ndarray):
+								for b,el_2 in enumerate(el_1):
+									y[a][b]=el_2/float(self.normalization_params[0])
 					Y.append(y)
 			if cur.next is None:
 				break
 			cur=cur.next
 			i+=1
-		return start_index,np.array(X, order='C', subok=True),np.array(Y, order='C', subok=True)
+		return start_index,np.array(X, order='C', subok=True, dtype=float),np.array(Y, order='C', subok=True, dtype=float)
 
 	def setNeuralNetworkResultArray(self,start_index,Y):
 		if not self.converted:
 			raise Exception('Not converted yet')
+		normalize = self.normalization_method in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP,Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES)
+		if normalize and (self.normalization_params is None or len(self.normalization_params)==0):
+			raise Exception('No normalization params found')
+		if normalize:
+			for a,el_1 in enumerate(Y):
+				if type(el_1) in (list,np.ndarray):
+					for b,el_2 in enumerate(el_1):
+						print(el_2)
+						Y[a][b]=el_2*float(self.normalization_params[0])
 		starting_point=self.data.getPointerAtIndex(start_index)
 		if starting_point is None:
 			return
@@ -508,6 +551,8 @@ class Dataset:
 		new_dataset=Dataset(name=self.name)
 		new_dataset.converted=self.converted
 		new_dataset.converted_params=self.converted_params+tuple() # tuple copy
+		new_dataset.normalization_method=self.normalization_method
+		new_dataset.normalization_params=self.normalization_params+tuple() # tuple copy
 		new_dataset.data=self.data.copy()
 		return new_dataset
 	
@@ -519,3 +564,5 @@ class Dataset:
 		self.data=None
 		self.converted=False
 		self.converted_params=tuple()
+		self.normalization_method=None
+		self.normalization_params=tuple()
