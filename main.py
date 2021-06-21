@@ -10,8 +10,8 @@ from Utils import Utils
 
 def getPredefHyperparams():
 	hyperparameters=[]
-	
-	backwards_samples=20
+
+	backwards_samples=30
 	forward_samples=7 
 	lstm_layers=2
 	layer_sizes=[25,15]
@@ -24,7 +24,7 @@ def getPredefHyperparams():
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
 	
-	backwards_samples=30
+	backwards_samples=20
 	forward_samples=7 
 	lstm_layers=2
 	layer_sizes=[25,15]
@@ -85,8 +85,8 @@ def main(argv):
 	crawler=Crawler()
 
 	stocks=[]
-	stocks.append('CPLE6.SA')
 	stocks.append('CESP3.SA')
+	stocks.append('CPLE6.SA')
 	stocks.append('CSMG3.SA')
 	stocks.append('ENBR3.SA')
 	stocks.append('TRPL4.SA')
