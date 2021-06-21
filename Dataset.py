@@ -345,14 +345,13 @@ class Dataset:
 			cur=cur.next
 		if has_future:
 			missing_values=missing_values[-forward_samples:]
-			future_list=[[]]
+			future_list=[[] for _ in range(forward_samples)]
 			for i,list_of_preds in enumerate(missing_values):
+				k=0
 				for j,el in enumerate(list_of_preds):
-					idx=i*forward_samples+j
-					if idx>=back_samples-forward_samples:
-						future_list[-1].append(el)
-						if len(future_list[-1])>=forward_samples:
-							future_list.append([])
+					if i+j>=forward_samples-1:
+						future_list[k].append(el)
+						k+=1
 			amount_of_companies=len(future_list[0])
 			for lists in future_list:
 				new_list=[ [] for _ in range(amount_of_companies) ]
@@ -455,11 +454,17 @@ class Dataset:
 				break
 			cur=cur.next
 			i+=1
-		return start_index,np.array(X, order='C', subok=True, dtype=float),np.array(Y, order='C', subok=True, dtype=float)
+		X=np.array(X, order='C', subok=True, dtype=float)
+		Y=np.array(Y, order='C', subok=True, dtype=float)
+		X=self.reshapeFeaturesToNeuralNetwork(X)
+		Y=self.reshapeLabelsToNeuralNetwork(Y)
+		return start_index,X,Y
 
 	def setNeuralNetworkResultArray(self,start_index,Y):
 		if not self.converted:
 			raise Exception('Not converted yet')
+		if len(Y.shape)==2:
+			Y=self.reshapeLabelsFromNeuralNetwork(Y)
 		normalize = self.normalization_method is not None and self.normalization_method in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP,Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES)
 		if normalize and (self.normalization_params is None or len(self.normalization_params)==0):
 			raise Exception('No normalization params found')
@@ -480,6 +485,30 @@ class Dataset:
 				break
 			cur=cur.next
 			i+=1
+
+	def reshapeFeaturesToNeuralNetwork(self,X):
+		in_shape=X.shape
+		if in_shape[0]==0:
+			return X
+		return X.reshape(in_shape[0],in_shape[1],-1)
+
+	def reshapeFeaturesFromNeuralNetwork(self,X):
+		in_shape=X.shape
+		if in_shape[0]==0:
+			return X
+		return X.reshape(in_shape[0],in_shape[1],self.companies,-1)
+
+	def reshapeLabelsToNeuralNetwork(self,Y):
+		in_shape=Y.shape
+		if in_shape[0]==0:
+			return Y
+		return Y.reshape(in_shape[0],-1)
+
+	def reshapeLabelsFromNeuralNetwork(self,Y):
+		in_shape=Y.shape
+		if in_shape[0]==0:
+			return Y
+		return Y.reshape(in_shape[0],-1,self.companies)
 	
 	def addCompany(self,stock_value_array,date_array=None,features_2d_array=None):
 		if self.converted:
@@ -531,6 +560,7 @@ class Dataset:
 					cur=cur.next
 		if first_company:
 			self.data.regenerateIndexes()
+		self.companies+=1
 
 	def print(self):
 		print('Name: '+self.name)
@@ -552,6 +582,7 @@ class Dataset:
 
 	def copy(self):
 		new_dataset=Dataset(name=self.name)
+		new_dataset.companies=self.companies
 		new_dataset.converted=self.converted
 		new_dataset.converted_params=self.converted_params+tuple() # tuple copy
 		new_dataset.normalization_method=self.normalization_method
@@ -565,6 +596,7 @@ class Dataset:
 	def __init__(self,name):
 		self.name=name
 		self.data=None
+		self.companies=0
 		self.converted=False
 		self.converted_params=tuple()
 		self.normalization_method=None

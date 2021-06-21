@@ -44,7 +44,7 @@ class NNDatasetContainer:
 		else:
 			test_index,train_x,test_x=Dataset.splitNeuralNetworkArray(dataset_x,self.train_percent)
 			_,train_y,test_y=Dataset.splitNeuralNetworkArray(dataset_y,part2_index=test_index)
-			val_index,train_x,val_x=Dataset.splitNeuralNetworkArray(train_x,self.val_percent)
+			val_index,train_x,val_x=Dataset.splitNeuralNetworkArray(train_x,1-self.val_percent)
 			_,train_y,val_y=Dataset.splitNeuralNetworkArray(train_y,part2_index=val_index)
 			self.train_x=train_x
 			self.train_y=train_y

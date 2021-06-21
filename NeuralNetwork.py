@@ -10,6 +10,7 @@ from Utils import Utils
 from Actuator import Actuator
 import pandas as pd
 import numpy as np
+import datetime as dt
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers import Dense, Dropout
 from keras.layers import LSTM
@@ -46,10 +47,7 @@ class NeuralNetwork:
 		self.filenames['hyperparameters']=self.basename+'_hyperparams.json'
 		self.filenames['metrics']=self.basename+'_metrics.json'
 		self.filenames['history']=self.basename+'_history.json'
-		if len(self.hyperparameters.input_features) > 1 or self.hyperparameters.amount_companies>1:
-			self.filenames['scaler']=[self.basename+'_scaler_labels.bin',self.basename+'_scaler_feats.bin']
-		else:
-			self.filenames['scaler']=[self.basename+'_scaler.bin']
+		self.filenames['scaler']=self.basename+'_scaler.bin'
 
 	def checkTrainedModelExists(self):
 		return Utils.checkIfPathExists(self.getModelPath(self.filenames['hyperparameters'])) and Utils.checkIfPathExists(self.getModelPath(self.filenames['model']))
@@ -62,8 +60,7 @@ class NeuralNetwork:
 		if self.data is None:
 			self.data=DatasetOld(None,None,None,None,None,None,None,None,None,None,None,None)
 		self.data.scalers=[]
-		for scaler_filename in self.filenames['scaler']:
-			self.data.scalers.append(Utils.loadObj(self.getModelPath(scaler_filename)))
+		self.data.scalers.append(Utils.loadObj(self.getModelPath(self.filenames['scaler'])))
 		self.history=Utils.loadJson(self.getModelPath(self.filenames['history']))
 
 	def save(self):
@@ -71,9 +68,8 @@ class NeuralNetwork:
 		print('Model saved at {};'.format(self.getModelPath(self.filenames['model'])))
 		self.hyperparameters.saveJson(self.getModelPath(self.filenames['hyperparameters']))
 		print('Model Hyperparameters saved at {};'.format(self.getModelPath(self.filenames['hyperparameters'])))
-		for i in range(len(self.data.scalers)):
-			Utils.saveObj(self.data.scalers[i],self.getModelPath(self.filenames['scaler'][i]))
-			print('Model Scaler {} saved at {};'.format(i,self.getModelPath(self.filenames['scaler'][i])))
+		Utils.saveObj(self.data.scaler,self.getModelPath(self.filenames['scaler']))
+		print('Model Scaler saved at {};'.format(self.getModelPath(self.filenames['scaler'])))
 		Utils.saveJson(self.history,self.getModelPath(self.filenames['history']))
 		print('Model History saved at {};'.format(self.getModelPath(self.filenames['history'])))
 		
@@ -82,110 +78,137 @@ class NeuralNetwork:
 		self.parseHistoryToVanilla()
 		self.statefulModelWorkaround()
 
-	def eval(self,data_to_eval=None,plot=False,plot_training=False, print_prediction=False):
-		if data_to_eval is not None:
-			if type(data_to_eval)!=list:
-				data_to_eval=[data_to_eval]
-			for data in data_to_eval:
-				if type(data)!=DatasetOld.EvalData:
-					raise Exception('Wrong data object type')
-		else:
-			data_to_eval=[]
-			if self.data.train_val.features.shape[0] > 0:
-				# data_to_eval.append(DatasetOld.EvalData(self.data.train_val.features,real=self.data.train_val.labels,index=self.data.indexes.train)) # TODO era pra ser assim
-				data_to_eval.append(DatasetOld.EvalData(self.data.train_val.features,real=self.data.train_val.labels[:-self.hyperparameters.forward_samples, :],index=Utils.estimateNextElements(self.data.indexes.train,((len(self.data.indexes.test)-len(self.data.test.features))-(len(self.data.indexes.train)-len(self.data.train_val.features))))))  # TODO gambiarra avançada  
-			data_to_eval.append(DatasetOld.EvalData(self.data.test.features,real=self.data.test.labels,index=self.data.indexes.test))		   
-            
+	def eval(self,plot=False,plot_training=False, print_prediction=False):
+		# add data to be evaluated
+		data_to_eval=[]
+		data_to_eval.append({'features':self.data.test_x,'labels':self.data.test_y,'index':self.data.test_start_idx,'name':'test'})		   
+		if self.data.val_start_idx is not None:
+			data_to_eval.append({'features':self.data.val_x,'labels':self.data.val_y,'index':self.data.val_start_idx,'name':'val'})
+		if self.data.train_start_idx is not None:
+			data_to_eval.append({'features':self.data.train_x,'labels':self.data.train_y,'index':self.data.train_start_idx,'name':'train'})
+	
+		# predict values
 		for data in data_to_eval:
-			data.predicted=self.model.predict(data.features)
+			data['predicted']=self.model.predict(data['features'])
 
-		model_metrics=self.model.evaluate(data.features[:len(data.real)],data.real)
-		# model_metrics=self.model.evaluate(data.features,data.real) # TODO test
+		# join predictions
+		full_predicted_values=None
+		for i in reversed(range(len(data_to_eval))):
+			data=data_to_eval[i]
+			to_append=self.data.dataset.reshapeLabelsFromNeuralNetwork(data['predicted'])
+			if full_predicted_values is None:
+				full_predicted_values=to_append
+			else:
+				full_predicted_values=np.concatenate((full_predicted_values, to_append))
+		
+		# get the real values and dates
+		real_values=self.data.dataset.getValues(only_main_value=True)
+		if type(real_values[0]) is list:
+			tmp_real_values=[[] for _ in range(self.hyperparameters.amount_companies)]
+			for val in real_values:
+				for i in range(self.hyperparameters.amount_companies):
+					tmp_real_values[i].append(val[i])
+			real_values=tmp_real_values
+		else:
+			real_values=[real_values]
+		dates=[dt.datetime.strptime(d,"%d/%m/%Y").date() for d in self.data.dataset.getIndexes()]
+
+		# process predictions
+		first_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
+		last_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
+		mean_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
+		fl_mean_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
+		for pred_val in full_predicted_values:
+			pred_val=np.swapaxes(pred_val,0,1)
+			for i in range(self.hyperparameters.amount_companies):
+				first_value_predictions[i].append(pred_val[i][0])
+				last_value_predictions[i].append(pred_val[i][-1])
+				mean_value_predictions[i].append(pred_val[i].mean())
+				fl_mean_value_predictions[i].append((pred_val[i][0]+pred_val[i][1])/2.0)
+
+		# assign predictions to dataset
+		for data in data_to_eval:
+			self.data.dataset.setNeuralNetworkResultArray(data['index'],data['predicted'])
+		self.data.dataset.revertFromTemporalValues()
+
+		# compute only predictions
+		pred_dates,pred_values=self.data.dataset.getDatesAndPredictions()
+		pred_dates=[dt.datetime.strptime(d,"%d/%m/%Y").date() for d in pred_dates]
+		tmp_pred_values=[[[] for _ in range(self.hyperparameters.forward_samples)] for _ in range(self.hyperparameters.amount_companies)]
+		for i,day_samples in enumerate(pred_values):
+			for j,a_prediction in enumerate(day_samples): 
+				for k,company in enumerate(a_prediction):
+					tmp_pred_values[k][j].append(company)
+		pred_values=tmp_pred_values
+
+		# compute metrics
+		model_metrics=self.model.evaluate(data_to_eval[-1]['features'][:len(data_to_eval[-1]['labels'])],data_to_eval[-1]['labels'])
 		aux={}
 		for i in range(len(model_metrics)):
 			aux[self.model.metrics_names[i]] = model_metrics[i]
 		model_metrics=aux
+		metrics={'Model Metrics':model_metrics,'Strategy Metrics':[],'Class Metrics':[]}
+		for i in range(self.hyperparameters.amount_companies):
+			swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_values[i],fl_mean_value_predictions[i])
+			viniccius13_return=Actuator.autoBuy13(real_values[i],fl_mean_value_predictions[i])
+			strategy_metrics={}
+			class_metrics={}
+			if self.hyperparameters.amount_companies>1:
+				company_text='{} of {}'.format(i+1,self.hyperparameters.amount_companies)
+				strategy_metrics['Company']=company_text
+				class_metrics['Company']=company_text
+			strategy_metrics['Daily Swing Trade Return']=swing_return
+			strategy_metrics['Buy & Hold Return']=buy_hold_return
+			strategy_metrics['Auto13(${}) Return'.format(Actuator.INITIAL_INVESTIMENT)]=viniccius13_return
+			for key, value in class_metrics_tmp.items():
+				class_metrics[key]=value
+			metrics['Strategy Metrics'].append(strategy_metrics)
+			metrics['Class Metrics'].append(class_metrics)
+			if self.verbose:
+				Utils.printDict(model_metrics,'Model metrics')
+				Utils.printDict(class_metrics,'Class metrics')
+				Utils.printDict(strategy_metrics,'Strategy metrics')
 
-		if self.hyperparameters.normalize:
-			for data in data_to_eval:
-				data.predicted=self.data.scalers[0].inverse_transform(data.predicted)
-				data.real=self.data.scalers[0].inverse_transform(data.real)
-
+		# plot trainning stats			
 		if plot_training:
 			plt.plot(self.history['loss'], label='loss')
 			plt.plot(self.history['val_loss'], label='val_loss')
 			plt.legend(loc='best')
-			plt.title('Training loss of {}'.format(self.data.name))
+			plt.title('Training loss of {}'.format(self.data.dataset.name))
 			plt.show()
 
-		if self.hyperparameters.amount_companies>1:
-			for data in data_to_eval:
-				data.predicted=self.uncompactMultiCompanyArray(data.predicted)
-				data.real=self.uncompactMultiCompanyArray(data.real)
-				data.predicted=self.isolateMultiCompanyArray(data.predicted)
-				data.real=self.isolateMultiCompanyArray(data.real)
-		else:
-			for data in data_to_eval:
-				data.predicted=[data.predicted]
-				data.real=[data.real]
-
-		metrics={'Model Metrics':model_metrics,'Strategy Metrics':[],'Class Metrics':[]}
-
-
-		predicted_array_labels=['Predicted F','Predicted L','Predicted Mean','Predicted FL Mean']
-		predicted_array_colors=['r','g','c','k']
-		for k in range(len(data_to_eval)):
-			data=data_to_eval[k]
+		# plot data
+		if plot:
 			for i in range(self.hyperparameters.amount_companies):
-				data.real[i]=self.unwrapFoldedArray(data.real[i])
-				data.predicted[i]=self.processPredictedArray(data.predicted[i])
-
-				swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(data.real[i],data.predicted[i][3]) #3 = FL mean
-				viniccius13_return=Actuator.autoBuy13(data.real[i],data.predicted[i][3]) #3 = FL mean
-
-				strategy_metrics={}
-				class_metrics={}
-				company_text=''
+				plt.plot(dates,real_values[i], label='Real')
+				plt.plot(dates,real_values[i], color='r', label='Predicted F')
+				plt.plot(dates,real_values[i], color='g', label='Predicted L')
+				plt.plot(dates,real_values[i], color='c', label='Predicted Mean')
+				plt.plot(dates,real_values[i], color='k', label='Predicted FL Mean')
 				if self.hyperparameters.amount_companies>1:
-					company_text='{} of {}'.format(i+1,self.hyperparameters.amount_companies)
-					strategy_metrics['Company']=company_text
-					class_metrics['Company']=company_text
+					plt.title('Stock values {} | Company {} of {}'.format(self.data.dataset.name,(i+1),self.hyperparameters.amount_companies))
+				else:
+					plt.title('Stock values {}'.format(self.data.dataset.name))
+				plt.legend(loc='best')
+				plt.show()
 
-				strategy_metrics['Daily Swing Trade Return']=swing_return
-				strategy_metrics['Buy & Hold Return']=buy_hold_return
-				strategy_metrics['Auto13(${}) Return'.format(Actuator.INITIAL_INVESTIMENT)]=viniccius13_return
-				for key, value in class_metrics_tmp.items():
-					class_metrics[key]=value
-
-				metrics['Strategy Metrics'].append(strategy_metrics)
-				metrics['Class Metrics'].append(class_metrics)
-
-				if self.verbose:
-					Utils.printDict(model_metrics,'Model metrics')
-					Utils.printDict(class_metrics,'Class metrics')
-					Utils.printDict(strategy_metrics,'Strategy metrics')
-
-				if plot:
-					try:
-						magic=0 # hyperparameters['amount_companies']-1 #?
-						input_size=self.hyperparameters.backwards_samples
-						output_size=self.hyperparameters.forward_samples
-
-						plt.plot(data.index[input_size+magic:-output_size+1],data.real[i], label='Real')
-						for j in range(len(predicted_array_labels)):
-							plt.plot(data.index[input_size+magic:],data.predicted[i][j], color=predicted_array_colors[j], label=predicted_array_labels[j])
-							if print_prediction:
-								print(self.stock_name)
-								print(data.predicted[i][j])
-						plt.title('Stock values {} | {} - Company {}'.format(self.data.name,k,company_text))
-						plt.legend(loc='best')
-						plt.show()
-					except Exception as e:
-						print("Error on plot")
-						print(type(e))
-						print(e.args)
-						print(e)
-
+		# plot predictions
+		if plot:
+			for i in range(self.hyperparameters.amount_companies):
+				for j in reversed(range(self.hyperparameters.forward_samples)):
+					plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o', label='Prediction {}'.format(j+1))
+				if self.hyperparameters.amount_companies>1:
+					plt.title('Pred values {} | Company {} of {}'.format(self.data.dataset.name,(i+1),self.hyperparameters.amount_companies))
+				else:
+					plt.title('Pred values {}'.format(self.data.dataset.name))
+				plt.legend(loc='best')
+				plt.show()
+		
+		# print predictions
+		if print_prediction:
+			pass # TODO code me
+		
+		# save metrics
 		Utils.saveJson(metrics,self.getModelPath(self.filenames['metrics']),sort_keys=False)
 		print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
 		return metrics
@@ -236,23 +259,19 @@ class NeuralNetwork:
 		
 	def _buildModel(self,force_stateless=False):
 		model=Sequential()
+		input_features_size=len(self.hyperparameters.input_features)
 		for l in range(self.hyperparameters.lstm_layers):
-			deepness=1
-			input_features_size=len(self.hyperparameters.input_features)
-			if input_features_size>1:
-				deepness=input_features_size
-			elif self.hyperparameters.amount_companies>1:
-				deepness=self.hyperparameters.amount_companies
-			input_shape=(self.hyperparameters.layer_sizes[l],deepness)
+			input_shape=(self.hyperparameters.layer_sizes[l],self.hyperparameters.amount_companies*input_features_size)
+			batch_input_shape=tuple([self.hyperparameters.batch_size])+input_shape
+			return_sequences=True if l+1<self.hyperparameters.lstm_layers else False
 			is_stateful=self.hyperparameters.stateful and not force_stateless
 			if is_stateful:
 				if l==0:
-					batch_input_shape=(self.hyperparameters.batch_size,self.hyperparameters.layer_sizes[l],deepness)
-					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],batch_input_shape=batch_input_shape, stateful=is_stateful, return_sequences=True if l+1<self.hyperparameters.lstm_layers else False))
+					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],batch_input_shape=batch_input_shape, stateful=is_stateful, return_sequences=return_sequences))
 				else:
-					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=True if l+1<self.hyperparameters.lstm_layers else False))
+					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences))
 			else:
-				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=True if l+1<self.hyperparameters.lstm_layers else False))
+				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences))
 			if self.hyperparameters.dropout_values[l]>0:
 				model.add(Dropout(self.hyperparameters.dropout_values[l]))
 		model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies))
@@ -396,7 +415,7 @@ class NeuralNetwork:
 		dataset_name+=extra_dataset_name
 
 		# parse dataset
-		parsed_dataset=Dataset(name='dataset_name')
+		parsed_dataset=Dataset(name=dataset_name)
 		for dataset in datasets_to_load:
 			parsed_dataset.addCompany(dataset['main_feature'],date_array=dataset['dates'],features_2d_array=dataset['other_features'])
 
