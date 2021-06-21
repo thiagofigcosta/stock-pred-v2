@@ -196,7 +196,7 @@ class NeuralNetwork:
 		if plot:
 			for i in range(self.hyperparameters.amount_companies):
 				for j in reversed(range(self.hyperparameters.forward_samples)):
-					plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o', label='Prediction {}'.format(j+1))
+					plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j))
 				if self.hyperparameters.amount_companies>1:
 					plt.title('Pred values {} | Company {} of {}'.format(self.data.dataset.name,(i+1),self.hyperparameters.amount_companies))
 				else:
