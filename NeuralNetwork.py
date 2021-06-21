@@ -58,9 +58,7 @@ class NeuralNetwork:
 		self.model=load_model(self.getModelPath(self.filenames['model']))
 		self.statefulModelWorkaround()
 		if self.data is None:
-			self.data=DatasetOld(None,None,None,None,None,None,None,None,None,None,None,None)
-		self.data.scalers=[]
-		self.data.scalers.append(Utils.loadObj(self.getModelPath(self.filenames['scaler'])))
+			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
 		self.history=Utils.loadJson(self.getModelPath(self.filenames['history']))
 
 	def save(self):
