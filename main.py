@@ -4,6 +4,7 @@
 import sys
 import time
 import getopt
+from matplotlib import pyplot as plt
 from Crawler import Crawler
 from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
@@ -82,7 +83,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,restore_checkpoints,download_if_needed,stocks):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks):
 	crawler=Crawler()
 
 	if 'all' in stocks:
@@ -118,10 +119,10 @@ def run(train_model,force_train,eval_model,plot,plot_eval,restore_checkpoints,do
 			# build and train
 			neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
 			if not neuralNetwork.checkTrainedModelExists():
-				neuralNetwork.loadDataset(filepaths[stock],plot=False)
+				neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots)
 				neuralNetwork.buildModel()
 				neuralNetwork.train()
-				neuralNetwork.eval(plot=plot,plot_training=plot)
+				neuralNetwork.eval(plot=plot,plot_training=plot,blocking_plots=blocking_plots)
 				neuralNetwork.save()
 	
 	if restore_checkpoints:
@@ -132,23 +133,29 @@ def run(train_model,force_train,eval_model,plot,plot_eval,restore_checkpoints,do
 			# load
 			neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
 			neuralNetwork.load()
-			neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021')
-			neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True)
+			neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots)
+			neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots)
+
+	if not blocking_plots:
+		plt.close() # delete the last and empty figure
+		plt.show()
 
 	
 def main(argv):
-	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all'
+	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all'
 	# args vars
 	train_model=False
 	force_train=False
 	eval_model=False
 	plot=False
 	plot_eval=False
+	plot_dataset=False
+	blocking_plots=False
 	restore_checkpoints=True
 	download_if_needed=True
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','do-not-restore-checkpoints','do-not-download','stock='])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','do-not-restore-checkpoints','do-not-download','stock='])
 	except getopt.GetoptError:
 		print (help_str)
 		sys.exit(2)
@@ -167,6 +174,10 @@ def main(argv):
 			plot=True
 		elif opt == 'plot-eval':
 			plot_eval=True
+		elif opt == 'plot-dataset':
+			plot_dataset=True
+		elif opt == 'blocking-plots':
+			blocking_plots=True
 		elif opt == 'do-not-restore-checkpoints':
 			restore_checkpoints=False
 		elif opt == 'do-not-download':
@@ -180,24 +191,29 @@ def main(argv):
 		train_model=True
 		force_train=False
 		eval_model=True
-		plot=False
-		plot_eval=True
+		plot=True
+		plot_eval=False
+		plot_dataset=False
+		blocking_plots=False
 		restore_checkpoints=True
 		download_if_needed=True
 		print('No arguments were found, using defaults:')
+		print('\tcmd: python3 main.py --train --eval --plot')
 		print('\ttrain_model:',train_model)
 		print('\tforce_train:',force_train)
 		print('\teval_model:',eval_model)
 		print('\tplot:',plot)
 		print('\tplot_eval:',plot_eval)
+		print('\tplot_dataset:',plot_dataset)
+		print('\tblocking_plots:',blocking_plots)
 		print('\trestore_checkpoints:',restore_checkpoints)
 		print('\tdownload_if_needed:',download_if_needed)
 		print('\tstocks:',stocks)
 
-	run(train_model,force_train,eval_model,plot,plot_eval,restore_checkpoints,download_if_needed,stocks)
+	run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks)
 
 if __name__ == '__main__':
 	delta=-time.time()
 	main(sys.argv[1:])
 	delta+=time.time()
-	print('\n\nTotal run time is {} s'.format(delta))
+	print('\n\nTotal run time is {}'.format(Utils.msToHumanReadable(delta*1000)))

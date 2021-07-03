@@ -78,7 +78,7 @@ class NeuralNetwork:
 		self.parseHistoryToVanilla()
 		self.statefulModelWorkaround()
 
-	def eval(self,plot=False,plot_training=False, print_prediction=False):
+	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False):
 		# add data to be evaluated
 		data_to_eval=[]
 		data_to_eval.append({'features':self.data.test_x,'labels':self.data.test_y,'index':self.data.test_start_idx,'name':'test'})		   
@@ -177,7 +177,11 @@ class NeuralNetwork:
 			plt.plot(self.history['val_loss'], label='val_loss')
 			plt.legend(loc='best')
 			plt.title('Training loss of {}'.format(self.data.dataset.name))
-			plt.show()
+			if blocking_plots:
+				plt.show()
+			else:
+				plt.show(block=False)
+				plt.figure()
 
 		# plot data
 		if plot:
@@ -192,7 +196,11 @@ class NeuralNetwork:
 				else:
 					plt.title('Stock values {}'.format(self.data.dataset.name))
 				plt.legend(loc='best')
-				plt.show()
+				if blocking_plots:
+					plt.show()
+				else:
+					plt.show(block=False)
+					plt.figure()
 
 		# print predictions
 		if print_prediction:
@@ -236,8 +244,12 @@ class NeuralNetwork:
 				else:
 					plt.xticks(pred_dates,rotation=30,ha='right')
 				plt.tight_layout()
-				plt.show()
-		
+				if blocking_plots:
+					plt.show()
+				else:
+					plt.show(block=False)
+					plt.figure()
+			
 		
 		# save metrics
 		Utils.saveJson(metrics,self.getModelPath(self.filenames['metrics']),sort_keys=False)
@@ -303,12 +315,12 @@ class NeuralNetwork:
 					new_hist[key] = list(map(float, self.history.history[key]))
 		self.history=new_hist
 
-	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False):
-		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0)
+	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False,blocking_plots=False):
+		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0,blocking_plots=blocking_plots)
 
 	# company_index_array defines which dataset files are from each company, enables to load multiple companies and use multiple files for the same company
 	# from_date format : '01/03/2002'
-	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None):
+	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None,blocking_plots=False):
 		if type(paths)!=list:
 			paths=[paths]
 		if train_percent is None:
@@ -390,7 +402,11 @@ class NeuralNetwork:
 					label='Stock Values Company {} from {}'.format(i+1,dataset_name)
 				plt.plot(full_data[i], label=label)
 				plt.legend(loc='best')
-				plt.show()
+				if blocking_plots:
+					plt.show()
+				else:
+					plt.show(block=False)
+					plt.figure()
 
 		# truncate multiple companies
 		if amount_of_companies>1:

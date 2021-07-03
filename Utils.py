@@ -153,3 +153,32 @@ class Utils:
 		if text.startswith(prefix):
 			return text[len(prefix):]
 		return text
+
+	@staticmethod
+	def msToHumanReadable(timestamp):
+		timestamp=int(timestamp)
+		D=int(timestamp/1000/60/60/24)
+		H=int(timestamp/1000/60/60%24)
+		M=int(timestamp/1000/60%60)
+		S=int(timestamp/1000%60)
+		MS=int(timestamp%1000)
+		out='' if timestamp > 0 else 'FINISHED'
+		if D > 0:
+			out+='{} days '.format(D)
+		if D > 0 and MS == 0 and S == 0 and M == 0 and H > 0:
+			out+='and '
+		if H > 0:
+			out+='{} hours '.format(H)
+		if (D > 0 or H > 0) and MS == 0 and S == 0 and M > 0:
+			out+='and '
+		if M > 0:
+			out+='{} minutes '.format(M)
+		if (D > 0 or H > 0 or M > 0) and MS == 0 and S > 0:
+			out+='and '
+		if S > 0:
+			out+='{} seconds '.format(S)
+		if (D > 0 or H > 0 or M > 0 or S > 0) and MS > 0:
+			out+='and '
+		if MS > 0:
+			out+='{} milliseconds '.format(MS)
+		return out
