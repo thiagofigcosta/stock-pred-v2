@@ -235,13 +235,13 @@ class Utils:
 		return ret
 
 	@staticmethod
-	def printDict(dictionary,name=None):
+	def printDict(dictionary,name=None,tabs=0):
 		start=''
 		if name is not None:
-			print('{}:'.format(name))
+			print('{}{}:'.format('\t'*tabs,name))
 			start='\t'
 		for key,value in dictionary.items():
-			print('{}{}: {}'.format(start,key,value))
+			print('{}{}{}: {}'.format('\t'*tabs,start,key,value))
 
 	@staticmethod
 	def estimateNextElements(array,n):

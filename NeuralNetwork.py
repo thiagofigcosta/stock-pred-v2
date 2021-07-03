@@ -192,6 +192,28 @@ class NeuralNetwork:
 				plt.legend(loc='best')
 				plt.show()
 
+		# print predictions
+		if print_prediction:
+			for i in range(self.hyperparameters.amount_companies):
+				print('Company {} of {}:'.format((i+1),self.hyperparameters.amount_companies))
+				summary={}
+				for j in reversed(range(self.hyperparameters.forward_samples)):
+					print('\tPred {} of {}:'.format((self.hyperparameters.forward_samples-j),self.hyperparameters.forward_samples))
+					previous_value=real_values[i][-1]
+					tmp_dates=pred_dates[:len(pred_values[i][j])]
+					for k,value in enumerate(pred_values[i][j]):
+						diff=round(pred_values[i][j][k]-previous_value,2)
+						up=diff>0
+						print('\t\t{}: pred: {:+.2f} diff: {:+.2f} up: {}'.format(tmp_dates[k],round(pred_values[i][j][k],2),diff,up))
+						previous_value=pred_values[i][j][k]
+						if tmp_dates[k] not in summary:
+							summary[tmp_dates[k]]={'up':0,'down':0}
+						if up:
+							summary[tmp_dates[k]]['up']+=1
+						else:
+							summary[tmp_dates[k]]['down']+=1
+				Utils.printDict(summary,'Summary',1)
+
 		# plot predictions
 		if plot:
 			amount_of_previous_data_points=5
@@ -214,9 +236,6 @@ class NeuralNetwork:
 				plt.tight_layout()
 				plt.show()
 		
-		# print predictions
-		if print_prediction:
-			pass # TODO code me
 		
 		# save metrics
 		Utils.saveJson(metrics,self.getModelPath(self.filenames['metrics']),sort_keys=False)

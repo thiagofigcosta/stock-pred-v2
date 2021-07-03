@@ -82,7 +82,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,eval_model,plot,plot_eval,restore_checkpoints,download_if_needed,stocks):
+def run(train_model,force_train,eval_model,plot,plot_eval,restore_checkpoints,download_if_needed,stocks):
 	crawler=Crawler()
 
 	if 'all' in stocks:
@@ -103,7 +103,7 @@ def run(train_model,eval_model,plot,plot_eval,restore_checkpoints,download_if_ne
 		filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
 		filepath=crawler.getDatasetPath(filename)
 		filepaths[stock]=filepath
-		if not Utils.checkIfPathExists(filepath) and download_if_needed:
+		if (not Utils.checkIfPathExists(filepath) and download_if_needed) or force_train:
 			crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
 			# crawler.downloadStockDataCustomInterval(stock,filename,data_range='max') # just example
 	
@@ -137,9 +137,10 @@ def run(train_model,eval_model,plot,plot_eval,restore_checkpoints,download_if_ne
 
 	
 def main(argv):
-	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all'
+	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all'
 	# args vars
 	train_model=False
+	force_train=False
 	eval_model=False
 	plot=False
 	plot_eval=False
@@ -148,7 +149,7 @@ def main(argv):
 	stocks=[]
 	args=[]
 	try:
-		opts, args = getopt.getopt(argv,'htep',['help','train','eval','plot','plot-eval','do-not-restore-checkpoints','do-not-download','stock='])
+		opts, args = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','do-not-restore-checkpoints','do-not-download','stock='])
 	except getopt.GetoptError:
 		print (help_str)
 		sys.exit(2)
@@ -159,6 +160,8 @@ def main(argv):
 			sys.exit()
 		elif opt in ('t','train'):
 			train_model=True
+		elif opt == 'force-train':
+			force_train=True
 		elif opt in ('e','eval'):
 			eval_model=True
 		elif opt in ('p','plot'):
@@ -177,13 +180,14 @@ def main(argv):
 	if len(opts) == 0:
 		print('No arguments were found, using defaults')
 		train_model=True
+		force_train=False
 		eval_model=True
 		plot=False
 		plot_eval=True
 		restore_checkpoints=True
 		download_if_needed=True
 
-	run(train_model,eval_model,plot,plot_eval,restore_checkpoints,download_if_needed,stocks)
+	run(train_model,force_train,eval_model,plot,plot_eval,restore_checkpoints,download_if_needed,stocks)
 
 if __name__ == '__main__':
 	delta=-time.time()
