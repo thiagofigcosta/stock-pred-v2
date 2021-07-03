@@ -172,11 +172,11 @@ def main(argv):
 		elif opt == 'do-not-download':
 			download_if_needed=False
 		elif opt == 'stock':
-			stocks.append(arg.stip())
+			stocks.append(arg.strip())
 	if len(stocks)==0:
 		stocks.append('all')
 
-	if len(opts) == 0:
+	if len(opts) == 0 or (len(opts) == 1 and opts[0][0]=='--stock'):
 		train_model=True
 		force_train=False
 		eval_model=True
