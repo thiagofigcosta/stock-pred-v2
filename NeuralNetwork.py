@@ -200,6 +200,8 @@ class NeuralNetwork:
 				else:
 					plt.title('Pred values {}'.format(self.data.dataset.name))
 				plt.legend(loc='best')
+				plt.xticks(pred_dates,rotation=30,ha='right')
+				plt.tight_layout()
 				plt.show()
 		
 		# print predictions
