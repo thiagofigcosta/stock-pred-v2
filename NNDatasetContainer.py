@@ -23,7 +23,7 @@ class NNDatasetContainer:
 				norm_param=self.scaler
 				norm_method=Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES
 			else:
-				norm_method=Dataset.Normalization.NORMALIZE # TODO test the gap method
+				norm_method=Dataset.Normalization.NORMALIZE_WITH_GAP
 
 		start_index,dataset_x,dataset_y=self.dataset.getNeuralNetworkArrays(include_test_data=True,normalization=norm_method,external_maxes=norm_param)
 		if len(self.scaler)==0:

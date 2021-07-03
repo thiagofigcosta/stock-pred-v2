@@ -207,7 +207,10 @@ class NeuralNetwork:
 				else:
 					plt.title('Pred values {}'.format(self.data.dataset.name))
 				plt.legend(loc='best')
-				plt.xticks(pred_dates,rotation=30,ha='right')
+				if amount_of_previous_data_points>0:
+					plt.xticks(dates[-amount_of_previous_data_points:]+pred_dates,rotation=30,ha='right')
+				else:
+					plt.xticks(pred_dates,rotation=30,ha='right')
 				plt.tight_layout()
 				plt.show()
 		
