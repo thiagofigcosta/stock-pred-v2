@@ -8,6 +8,7 @@ import shutil
 import pandas as pd
 import numpy as np
 import datetime as dt
+import tensorflow as tf
 from Hyperparameters import Hyperparameters
 from Dataset import Dataset
 from NNDatasetContainer import NNDatasetContainer
@@ -18,6 +19,7 @@ from keras.layers import Dense, Dropout
 from keras.layers import LSTM
 from keras.models import Sequential, load_model
 from matplotlib import pyplot as plt
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 class NeuralNetwork:
 	MODELS_PATH='saved_models/'
