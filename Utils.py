@@ -253,3 +253,9 @@ class Utils:
 	@staticmethod
 	def changeDateFormat(date,in_format,out_format):
 		return dt.datetime.strptime(date, in_format).strftime(out_format)
+
+	@staticmethod
+	def removeStrPrefix(text, prefix):
+		if text.startswith(prefix):
+			return text[len(prefix):]
+		return text
