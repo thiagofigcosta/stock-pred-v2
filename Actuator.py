@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import math
+import traceback
 import random as rd
 import numpy as np
 from sklearn.metrics import precision_score
@@ -85,9 +86,8 @@ class Actuator:
 						stocks_to_buy=2
 				except Exception as e:
 					print("Error on auto13")
-					print(type(e))
-					print(e.args)
-					print(e)
+					print(type(e),e)
+					print(traceback.format_exc())
 				if real_stock_delta[i]<0:
 					corret_predicts_in_a_row=0
 					current_money+=real_stock_delta[i]*stocks_to_buy

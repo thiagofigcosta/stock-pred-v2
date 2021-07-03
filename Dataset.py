@@ -85,7 +85,6 @@ class Dataset:
 				if not cur.has_only_indexes:
 					if cur.backward_values is not None:
 						if amount_of_features is None:
-							print(cur.backward_values)
 							amount_of_features=len(cur.backward_values[0][0])
 							max_vals=[0]*amount_of_features
 						for a in cur.backward_values:
@@ -411,8 +410,10 @@ class Dataset:
 		if normalization in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP):
 			maxes=self.getAbsMaxes()
 			if normalization == Dataset.Normalization.NORMALIZE_WITH_GAP:
+				maxes=list(maxes)
 				for i in range(len(maxes)):
 					maxes[i]*=1.1 # gap percentage
+				maxes=tuple(maxes)
 			self.normalization_params=maxes
 			normalize=True
 		if normalization == Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES:
@@ -465,15 +466,7 @@ class Dataset:
 			raise Exception('Not converted yet')
 		if len(Y.shape)==2:
 			Y=self.reshapeLabelsFromNeuralNetwork(Y)
-		normalize = self.normalization_method is not None and self.normalization_method in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP,Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES)
-		if normalize and (self.normalization_params is None or len(self.normalization_params)==0):
-			raise Exception('No normalization params found')
-		if normalize:
-			for a,el_1 in enumerate(Y):
-				if type(el_1) in (list,np.ndarray):
-					for b,el_2 in enumerate(el_1):
-						print(el_2)
-						Y[a][b]=el_2*float(self.normalization_params[0])
+		Y=self.denormalizeLabelsFromNeuralNetwork(Y)
 		starting_point=self.data.getPointerAtIndex(start_index)
 		if starting_point is None:
 			return
@@ -485,6 +478,17 @@ class Dataset:
 				break
 			cur=cur.next
 			i+=1
+
+	def denormalizeLabelsFromNeuralNetwork(self,Y):
+		normalize = self.normalization_method is not None and self.normalization_method in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP,Dataset.Normalization.NORMALIZE_WITH_EXTERNAL_MAXES)
+		if normalize and (self.normalization_params is None or len(self.normalization_params)==0):
+			raise Exception('No normalization params found')
+		if normalize:
+			for a,el_1 in enumerate(Y):
+				if type(el_1) in (list,np.ndarray):
+					for b,el_2 in enumerate(el_1):
+						Y[a][b]=el_2*float(self.normalization_params[0])
+		return Y
 
 	def reshapeFeaturesToNeuralNetwork(self,X):
 		in_shape=X.shape

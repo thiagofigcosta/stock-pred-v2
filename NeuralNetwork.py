@@ -95,7 +95,8 @@ class NeuralNetwork:
 		full_predicted_values=None
 		for i in reversed(range(len(data_to_eval))):
 			data=data_to_eval[i]
-			to_append=self.data.dataset.reshapeLabelsFromNeuralNetwork(data['predicted'])
+			to_append=self.data.dataset.reshapeLabelsFromNeuralNetwork(data['predicted'].copy())
+			to_append=self.data.dataset.denormalizeLabelsFromNeuralNetwork(to_append)
 			if full_predicted_values is None:
 				full_predicted_values=to_append
 			else:
@@ -114,10 +115,10 @@ class NeuralNetwork:
 		dates=[dt.datetime.strptime(d,"%d/%m/%Y").date() for d in self.data.dataset.getIndexes()]
 
 		# process predictions
-		first_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
-		last_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
-		mean_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
-		fl_mean_value_predictions=[real_values[i][:self.hyperparameters.backwards_samples-1] for i in range(self.hyperparameters.amount_companies)]
+		first_value_predictions=[[] for i in range(self.hyperparameters.amount_companies)]
+		last_value_predictions=[[] for i in range(self.hyperparameters.amount_companies)]
+		mean_value_predictions=[[] for i in range(self.hyperparameters.amount_companies)]
+		fl_mean_value_predictions=[[] for i in range(self.hyperparameters.amount_companies)]
 		for pred_val in full_predicted_values:
 			pred_val=np.swapaxes(pred_val,0,1)
 			for i in range(self.hyperparameters.amount_companies):
@@ -149,8 +150,9 @@ class NeuralNetwork:
 		model_metrics=aux
 		metrics={'Model Metrics':model_metrics,'Strategy Metrics':[],'Class Metrics':[]}
 		for i in range(self.hyperparameters.amount_companies):
-			swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_values[i],fl_mean_value_predictions[i])
-			viniccius13_return=Actuator.autoBuy13(real_values[i],fl_mean_value_predictions[i])
+			real_value_without_backwards=real_values[i][self.hyperparameters.backwards_samples-1:]
+			swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_value_without_backwards,fl_mean_value_predictions[i])
+			viniccius13_return=Actuator.autoBuy13(real_value_without_backwards,fl_mean_value_predictions[i])
 			strategy_metrics={}
 			class_metrics={}
 			if self.hyperparameters.amount_companies>1:
@@ -181,10 +183,10 @@ class NeuralNetwork:
 		if plot:
 			for i in range(self.hyperparameters.amount_companies):
 				plt.plot(dates,real_values[i], label='Real')
-				plt.plot(dates,real_values[i], color='r', label='Predicted F')
-				plt.plot(dates,real_values[i], color='g', label='Predicted L')
-				plt.plot(dates,real_values[i], color='c', label='Predicted Mean')
-				plt.plot(dates,real_values[i], color='k', label='Predicted FL Mean')
+				plt.plot(dates[self.hyperparameters.backwards_samples-1:],first_value_predictions[i], color='r', label='Predicted F')
+				plt.plot(dates[self.hyperparameters.backwards_samples-1:],last_value_predictions[i], color='g', label='Predicted L')
+				plt.plot(dates[self.hyperparameters.backwards_samples-1:],mean_value_predictions[i], color='c', label='Predicted Mean')
+				plt.plot(dates[self.hyperparameters.backwards_samples-1:],fl_mean_value_predictions[i], color='k', label='Predicted FL Mean')
 				if self.hyperparameters.amount_companies>1:
 					plt.title('Stock values {} | Company {} of {}'.format(self.data.dataset.name,(i+1),self.hyperparameters.amount_companies))
 				else:

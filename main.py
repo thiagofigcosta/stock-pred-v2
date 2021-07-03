@@ -20,7 +20,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=0
-	normalize=False
+	normalize=True
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -33,7 +33,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=0
-	normalize=False
+	normalize=True
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -46,7 +46,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=[0,0,0.2]
-	normalize=False
+	normalize=True
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -60,7 +60,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=True
 	dropout_values=0
-	normalize=False
+	normalize=True
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -73,7 +73,7 @@ def getPredefHyperparams():
 	batch_size=5
 	stateful=False
 	dropout_values=0
-	normalize=False
+	normalize=True
 	train_percent=.8
 	val_percent=.2
 	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent))
@@ -178,7 +178,6 @@ def main(argv):
 		stocks.append('all')
 
 	if len(opts) == 0:
-		print('No arguments were found, using defaults')
 		train_model=True
 		force_train=False
 		eval_model=True
@@ -186,6 +185,15 @@ def main(argv):
 		plot_eval=True
 		restore_checkpoints=True
 		download_if_needed=True
+		print('No arguments were found, using defaults:')
+		print('\ttrain_model:',train_model)
+		print('\tforce_train:',force_train)
+		print('\teval_model:',eval_model)
+		print('\tplot:',plot)
+		print('\tplot_eval:',plot_eval)
+		print('\trestore_checkpoints:',restore_checkpoints)
+		print('\tdownload_if_needed:',download_if_needed)
+		print('\tstocks:',stocks)
 
 	run(train_model,force_train,eval_model,plot,plot_eval,restore_checkpoints,download_if_needed,stocks)
 

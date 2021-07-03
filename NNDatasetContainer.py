@@ -41,6 +41,7 @@ class NNDatasetContainer:
 			self.test_start_idx=start_index
 			print('test_x',self.test_x.shape)
 			print('test_y',self.test_y.shape)
+			print()
 		else:
 			test_index,train_x,test_x=Dataset.splitNeuralNetworkArray(dataset_x,self.train_percent)
 			_,train_y,test_y=Dataset.splitNeuralNetworkArray(dataset_y,part2_index=test_index)
@@ -63,6 +64,7 @@ class NNDatasetContainer:
 			print()
 			print('test_x',self.test_x.shape)
 			print('test_y',self.test_y.shape)
+			print()
 
 	def __init__(self,dataset,scaler,train_percent,val_percent,back_samples,forward_samples,normalize):
 		self.dataset=dataset
