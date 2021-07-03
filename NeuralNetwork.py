@@ -3,14 +3,16 @@
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3' # DISABLE TENSORFLOW WARNING
+import re
+import shutil
+import pandas as pd
+import numpy as np
+import datetime as dt
 from Hyperparameters import Hyperparameters
 from Dataset import Dataset
 from NNDatasetContainer import NNDatasetContainer
 from Utils import Utils
 from Actuator import Actuator
-import pandas as pd
-import numpy as np
-import datetime as dt
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers import Dense, Dropout
 from keras.layers import LSTM
@@ -426,3 +428,40 @@ class NeuralNetwork:
 		self.data=NNDatasetContainer(parsed_dataset,scaler,train_percent,val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
 		self.data.deployScaler()
 		self.data.generateNNArrays()
+
+	@staticmethod
+	def restoreAllBestModelsCPs(print_models=False):
+		models={}
+		for file_str in os.listdir(NeuralNetwork.MODELS_PATH):
+			re_result=re.search(r'([a-z0-9]*).*\.(h5|json)', file_str)
+			if re_result:
+				model_id=re_result.group(1)
+				if model_id not in models:
+					models[model_id]=[file_str]
+				else:
+					models[model_id].append(file_str)
+		if print_models:
+			models_list = list(models.keys())
+			models_list.sort()
+			for key in models_list:
+				print('Keys: {} len: {}'.format(key,len(models[key])))
+		for _,files in models.items():
+			checkpoint_filename=None
+			model_filename=None
+			metrics_filename=None
+			last_patience_filename=None
+			for file in files:
+				if re.search(r'.*_cp\.h5', file):
+					checkpoint_filename=file
+				elif re.search(r'.*(?<![_cp|_last_patience])\.h5', file):
+					model_filename=file
+				elif re.search(r'.*(?<!_last_patience)_metrics\.json', file):
+					metrics_filename=file
+				elif re.search(r'.*_last_patience\.h5', file):
+					last_patience_filename=file
+			if checkpoint_filename is not None and model_filename is not None and last_patience_filename is None:
+				print('Restoring checkpoint {}'.format(checkpoint_filename))
+				shutil.move(Utils.joinPath(NeuralNetwork.MODELS_PATH,model_filename),Utils.joinPath(NeuralNetwork.MODELS_PATH,model_filename.split('.')[0]+'_last_patience.h5'))
+				shutil.move(Utils.joinPath(NeuralNetwork.MODELS_PATH,checkpoint_filename),Utils.joinPath(NeuralNetwork.MODELS_PATH,model_filename))
+				if metrics_filename is not None:
+					shutil.move(Utils.joinPath(NeuralNetwork.MODELS_PATH,metrics_filename),Utils.joinPath(NeuralNetwork.MODELS_PATH,metrics_filename.split('_metrics')[0]+'_last_patience_metrics.json'))
