@@ -147,9 +147,8 @@ def main(argv):
 	restore_checkpoints=True
 	download_if_needed=True
 	stocks=[]
-	args=[]
 	try:
-		opts, args = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','do-not-restore-checkpoints','do-not-download','stock='])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','do-not-restore-checkpoints','do-not-download','stock='])
 	except getopt.GetoptError:
 		print (help_str)
 		sys.exit(2)

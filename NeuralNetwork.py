@@ -17,8 +17,6 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers import Dense, Dropout
 from keras.layers import LSTM
 from keras.models import Sequential, load_model
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 
 class NeuralNetwork:
@@ -243,38 +241,7 @@ class NeuralNetwork:
 		Utils.saveJson(metrics,self.getModelPath(self.filenames['metrics']),sort_keys=False)
 		print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
 		return metrics
-
-
-	def processPredictedArray(self,Y_pred):
-		magic_offset=1 # align pred with real
-		Y_pred_first_val=self.unwrapFoldedArray(Y_pred,magic_offset=0)
-		Y_pred_last_val=self.unwrapFoldedArray(Y_pred,use_last=True,magic_offset=0)
-		Y_pred_mean_val=self.unwrapFoldedArray(Y_pred,use_mean=True,magic_offset=0)
 		
-		Y_pred_first_val=Y_pred_first_val[magic_offset:]
-		Y_pred_last_val=Y_pred_last_val[magic_offset:]
-		Y_pred_mean_val=Y_pred_mean_val[magic_offset:]
-		Y_pred_fl_mean_val=[(Y_pred_first_val[i]+Y_pred_last_val[i])/2 for i in range(len(Y_pred_first_val))]
-		
-		return Y_pred_first_val, Y_pred_last_val, Y_pred_mean_val, Y_pred_fl_mean_val
-		
-	def uncompactMultiCompanyArray(self,compacted_array):
-		shape=compacted_array.shape
-		newshape=(shape[0], int(shape[1]/self.hyperparameters.amount_companies), self.hyperparameters.amount_companies)
-		return np.reshape(compacted_array, newshape=newshape)
-
-	def isolateMultiCompanyArray(self,uncompacted_array):
-		isolated_array=[]
-		for i in range(self.hyperparameters.amount_companies):
-			isolated_array.append([])
-		for samples in uncompacted_array:
-			for i in range(self.hyperparameters.amount_companies):
-				company_sample=[]
-				for j in range(len(samples)):
-					company_sample.append(samples[j][i])
-				
-				isolated_array[i].append(company_sample)
-		return np.array(isolated_array)
 
 	def statefulModelWorkaround(self):
 		if self.hyperparameters.stateful: # workaround because model.predict was not working for trained stateful models

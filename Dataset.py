@@ -207,7 +207,6 @@ class Dataset:
 			idx_arr=[]
 			cur=self
 			extra=0
-			first_value_found=False
 			while True:
 				if int_index:
 					idx_arr.append(cur.index)
@@ -218,8 +217,6 @@ class Dataset:
 				cur=cur.next
 				if cur.has_only_indexes:
 					extra+=1
-				else:
-					first_value_found=True
 			if degree>0 and not get_all:
 				idx_arr=idx_arr[degree:]
 			if extra>0 and not get_all:
