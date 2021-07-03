@@ -194,8 +194,13 @@ class NeuralNetwork:
 
 		# plot predictions
 		if plot:
+			amount_of_previous_data_points=5
 			for i in range(self.hyperparameters.amount_companies):
+				if amount_of_previous_data_points>0:
+					plt.plot(dates[-amount_of_previous_data_points:],real_values[i][-amount_of_previous_data_points:], '-o', label='Last real values')
 				for j in reversed(range(self.hyperparameters.forward_samples)):
+					if amount_of_previous_data_points>0:
+						plt.plot([dates[-1],pred_dates[0]],[real_values[i][-1],pred_values[i][j][0]], color='k', zorder=-666, linewidth=0.5)
 					plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j))
 				if self.hyperparameters.amount_companies>1:
 					plt.title('Pred values {} | Company {} of {}'.format(self.data.dataset.name,(i+1),self.hyperparameters.amount_companies))
