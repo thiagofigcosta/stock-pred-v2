@@ -365,9 +365,9 @@ class NeuralNetwork:
 					# enrich
 					print('Enriching column {} on {}...'.format(enriched_column_name,path))
 					if enriched_column_name == 'fast_moving_avg':
-						enriched_column=Utils.calcMovingAverage(stock_column,3)
+						enriched_column=Utils.calcMovingAverage(stock_column,13)
 					elif enriched_column_name == 'slow_moving_avg':
-						enriched_column=Utils.calcMovingAverage(stock_column,7)
+						enriched_column=Utils.calcMovingAverage(stock_column,21)
 					rows_to_crop=max(rows_to_crop,(len(stock_column)-len(enriched_column)))
 					enriched_columns[enriched_column_name]=enriched_column
 			frame = frame.loc[rows_to_crop:]
