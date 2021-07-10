@@ -2,6 +2,8 @@ ignoreme/
 #Pytho{\}
 .tmp_pythoN/
 
+log.txt
+
 datasets/
 saved_models/
 saved_plots/

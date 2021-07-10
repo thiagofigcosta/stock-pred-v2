@@ -4,6 +4,7 @@
 import sys
 import time
 import getopt
+import matplotlib
 from matplotlib import pyplot as plt
 from Crawler import Crawler
 from NeuralNetwork import NeuralNetwork
@@ -88,6 +89,9 @@ def getPredefHyperparams():
 def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset):
 	crawler=Crawler()
 
+	if save_plots:
+		matplotlib.use('Agg')
+
 	if 'all' in stocks:
 		stocks.remove('all')
 		all_known_stocks=['CESP3.SA','CPLE6.SA','CSMG3.SA','ENBR3.SA','TRPL4.SA']
@@ -158,6 +162,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	if not blocking_plots or save_plots:
 		plt.close() # delete the last and empty figure
+	if not blocking_plots:
 		plt.show()
 
 	
@@ -262,6 +267,8 @@ def main(argv):
 		print('\tenrich_dataset:',enrich_dataset)
 		print('\tsave_plots:',save_plots)
 		print('\tstocks:',stocks)
+		print('\tstart_date:',start_date)
+		print('\tend_date:',end_date)
 
 	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset)
 

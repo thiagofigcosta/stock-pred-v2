@@ -7,6 +7,7 @@ import re
 import shutil
 import pandas as pd
 import numpy as np
+import random as rd
 import datetime as dt
 import tensorflow as tf
 from Hyperparameters import Hyperparameters
@@ -19,7 +20,6 @@ from keras.layers import Dense, Dropout
 from keras.layers import LSTM
 from keras.models import Sequential, load_model
 from matplotlib import pyplot as plt
-import matplotlib
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 plt.rcParams.update({'figure.max_open_warning': 0})
 
@@ -27,6 +27,7 @@ class NeuralNetwork:
 	MODELS_PATH='saved_models/'
 	SAVED_PLOTS_PATH='saved_plots/'
 	SAVED_PLOTS_COUNTER=0
+	SAVED_PLOTS_ID=rd.randint(0, 666666)
 
 	def __init__(self,hyperparameters=None,hyperparameters_path=None,stock_name='undefined',verbose=False):
 		if hyperparameters is not None and type(hyperparameters)!=Hyperparameters:
@@ -49,7 +50,7 @@ class NeuralNetwork:
 
 	@staticmethod
 	def getNextPlotFilepath(prefix='plot'):
-		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,'{}_{}.png'.format(prefix,NeuralNetwork.SAVED_PLOTS_COUNTER))
+		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,'{}_{}--{}.png'.format(prefix,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID))
 		NeuralNetwork.SAVED_PLOTS_COUNTER+=1
 		return plotpath
 
@@ -196,7 +197,6 @@ class NeuralNetwork:
 			plt.title('Training loss of {}'.format(self.data.dataset.name))
 			plt.get_current_fig_manager().canvas.set_window_title('Training loss of {}'.format(self.data.dataset.name))
 			if save_plots:
-				# matplotlib.use('Agg')
 				plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_trainning_loss'.format(self.data.dataset.name)))
 				plt.figure()
 			else:
@@ -221,7 +221,6 @@ class NeuralNetwork:
 				plt.legend(loc='best')
 				plt.get_current_fig_manager().canvas.set_window_title('Stock {} values of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
 				if save_plots:
-					# matplotlib.use('Agg')
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_stock_values_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
 					plt.figure()
 				else:
@@ -275,7 +274,6 @@ class NeuralNetwork:
 				plt.tight_layout()
 				plt.get_current_fig_manager().canvas.set_window_title('Predictions {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				if save_plots:
-					# matplotlib.use('Agg')
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
 					plt.figure()
 				else:
@@ -469,7 +467,6 @@ class NeuralNetwork:
 				plt.legend(loc='best')
 				plt.get_current_fig_manager().canvas.set_window_title('Loaded dataset {}'.format(dataset_names_array[i]))
 				if save_plots:
-					# matplotlib.use('Agg')
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(dataset_names_array[i])))
 					plt.figure()
 				else:
