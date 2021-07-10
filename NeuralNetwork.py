@@ -19,16 +19,20 @@ from keras.layers import Dense, Dropout
 from keras.layers import LSTM
 from keras.models import Sequential, load_model
 from matplotlib import pyplot as plt
+import matplotlib
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 plt.rcParams.update({'figure.max_open_warning': 0})
 
 class NeuralNetwork:
 	MODELS_PATH='saved_models/'
+	SAVED_PLOTS_PATH='saved_plots/'
+	SAVED_PLOTS_COUNTER=0
 
 	def __init__(self,hyperparameters=None,hyperparameters_path=None,stock_name='undefined',verbose=False):
 		if hyperparameters is not None and type(hyperparameters)!=Hyperparameters:
 			raise Exception('Wrong hyperparameters object type')
 		Utils.createFolder(NeuralNetwork.MODELS_PATH)
+		Utils.createFolder(NeuralNetwork.SAVED_PLOTS_PATH)
 		self.hyperparameters=hyperparameters
 		self.verbose=verbose
 		self.stock_name=stock_name
@@ -42,6 +46,12 @@ class NeuralNetwork:
 			self.filenames={'hyperparameters':hyperparameters_path}
 		else:
 			self.setFilenames()
+
+	@staticmethod
+	def getNextPlotFilepath(prefix='plot'):
+		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,'{}_{}.png'.format(prefix,NeuralNetwork.SAVED_PLOTS_COUNTER))
+		NeuralNetwork.SAVED_PLOTS_COUNTER+=1
+		return plotpath
 
 	def setFilenames(self):
 		self.basename=self.hyperparameters.uuid+'_'+self.stock_name
@@ -79,7 +89,7 @@ class NeuralNetwork:
 		self.parseHistoryToVanilla()
 		self.statefulModelWorkaround()
 
-	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False):
+	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False, save_plots=False):
 		# add data to be evaluated
 		data_to_eval=[]
 		data_to_eval.append({'features':self.data.test_x,'labels':self.data.test_y,'index':self.data.test_start_idx,'name':'test'})		   
@@ -185,11 +195,15 @@ class NeuralNetwork:
 			plt.legend(loc='best')
 			plt.title('Training loss of {}'.format(self.data.dataset.name))
 			plt.get_current_fig_manager().canvas.set_window_title('Training loss of {}'.format(self.data.dataset.name))
-			if blocking_plots:
-				plt.show()
+			if save_plots:
+				# matplotlib.use('Agg')
+				plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_trainning_loss'.format(self.data.dataset.name)))
 			else:
-				plt.show(block=False)
-				plt.figure()
+				if blocking_plots:
+					plt.show()
+				else:
+					plt.show(block=False)
+					plt.figure()
 
 		# plot data
 		if plot:
@@ -204,12 +218,16 @@ class NeuralNetwork:
 				else:
 					plt.title('Stock values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				plt.legend(loc='best')
-				plt.get_current_fig_manager().canvas.set_window_title('Stock {} values and preds of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
-				if blocking_plots:
-					plt.show()
+				plt.get_current_fig_manager().canvas.set_window_title('Stock {} values of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
+				if save_plots:
+					# matplotlib.use('Agg')
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_stock_values_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
 				else:
-					plt.show(block=False)
-					plt.figure()
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
 
 		# print predictions
 		if print_prediction:
@@ -244,21 +262,25 @@ class NeuralNetwork:
 						plt.plot([dates[-1],pred_dates[0]],[real_values[i][-1],pred_values[i][j][0]], color='k', zorder=-666, linewidth=0.5)
 					plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j))
 				if self.hyperparameters.amount_companies>1:
-					plt.title('Pred values {} | Company {} of {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies))
+					plt.title('Pred values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 				else:
-					plt.title('Pred values {}'.format(self.data.dataset.getDatasetName(at=i)))
+					plt.title('Pred values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				plt.legend(loc='best')
 				if amount_of_previous_data_points>0:
 					plt.xticks(dates[-amount_of_previous_data_points:]+pred_dates,rotation=30,ha='right')
 				else:
 					plt.xticks(pred_dates,rotation=30,ha='right')
 				plt.tight_layout()
-				plt.get_current_fig_manager().canvas.set_window_title('Predictions {}'.format(self.data.dataset.getDatasetName(at=i)))
-				if blocking_plots:
-					plt.show()
+				plt.get_current_fig_manager().canvas.set_window_title('Predictions {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+				if save_plots:
+					# matplotlib.use('Agg')
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
 				else:
-					plt.show(block=False)
-					plt.figure()
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
 			
 		
 		# save metrics
@@ -352,12 +374,12 @@ class NeuralNetwork:
 			frame.to_csv(path,index=False)
 
 
-	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False,blocking_plots=False):
-		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0,blocking_plots=blocking_plots)
+	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False,blocking_plots=False, save_plots=False):
+		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0,blocking_plots=blocking_plots,save_plots=save_plots)
 
 	# company_index_array defines which dataset files are from each company, enables to load multiple companies and use multiple files for the same company
 	# from_date format : '01/03/2002'
-	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None,blocking_plots=False):
+	def loadDataset(self,paths,company_index_array=[0],from_date=None,plot=False,train_percent=None,val_percent=None,blocking_plots=False, save_plots=False):
 		if type(paths)!=list:
 			paths=[paths]
 		if train_percent is None:
@@ -443,12 +465,15 @@ class NeuralNetwork:
 				plt.plot(full_data[i], label=label)
 				plt.legend(loc='best')
 				plt.get_current_fig_manager().canvas.set_window_title('Loaded dataset {}'.format(dataset_names_array[i]))
-				if blocking_plots:
-					plt.show()
+				if save_plots:
+					# matplotlib.use('Agg')
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(dataset_names_array[i])))
 				else:
-					plt.show(block=False)
-					plt.figure()
-
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
 		# truncate multiple companies
 		if amount_of_companies>1:
 			first_common_date=None

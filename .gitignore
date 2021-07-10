@@ -4,6 +4,7 @@ ignoreme/
 
 datasets/
 saved_models/
+saved_plots/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -85,7 +85,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset):
 	crawler=Crawler()
 
 	if 'all' in stocks:
@@ -138,10 +138,10 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			for hyperparameter in hyperparameters[stock]:
 				neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
 				if not neuralNetwork.checkTrainedModelExists():
-					neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots)
+					neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots,save_plots=save_plots)
 					neuralNetwork.buildModel()
 					neuralNetwork.train()
-					neuralNetwork.eval(plot=plot,plot_training=plot,blocking_plots=blocking_plots)
+					neuralNetwork.eval(plot=plot,plot_training=plot,blocking_plots=blocking_plots,save_plots=save_plots)
 					neuralNetwork.save()
 	
 	if restore_checkpoints:
@@ -153,8 +153,8 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			for hyperparameter in hyperparameters[stock]:
 				neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
 				neuralNetwork.load()
-				neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots)
-				neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots)
+				neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots,save_plots=save_plots)
+				neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots,save_plots=save_plots)
 
 	if not blocking_plots:
 		plt.close() # delete the last and empty figure
@@ -162,7 +162,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]'
+	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]'
 	used_args=[]
 	# args vars
 	train_model=False
@@ -172,6 +172,7 @@ def main(argv):
 	plot_eval=False
 	plot_dataset=False
 	blocking_plots=False
+	save_plots=False
 	force_no_plots=False
 	restore_checkpoints=True
 	download_if_needed=True
@@ -180,7 +181,7 @@ def main(argv):
 	enrich_dataset=False
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset'])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset'])
 	except getopt.GetoptError:
 		print (help_str)
 		sys.exit(2)
@@ -204,6 +205,8 @@ def main(argv):
 			plot_dataset=True
 		elif opt == 'blocking-plots':
 			blocking_plots=True
+		elif opt == 'save-plots':
+			save_plots=True
 		elif opt == 'force-no-plots':
 			force_no_plots=True
 		elif opt == 'do-not-restore-checkpoints':
@@ -241,6 +244,8 @@ def main(argv):
 			download_if_needed=True
 		if 'enrich-dataset' not in used_args:
 			enrich_dataset=True
+		if 'save-plots' not in used_args:
+			save_plots=False
 		print('No functional arguments were found, using defaults:')
 		print('\tcmd: python3 main.py --train --eval --plot')
 		print('\ttrain_model:',train_model)
@@ -254,9 +259,10 @@ def main(argv):
 		print('\trestore_checkpoints:',restore_checkpoints)
 		print('\tdownload_if_needed:',download_if_needed)
 		print('\tenrich_dataset:',enrich_dataset)
+		print('\tsave_plots:',save_plots)
 		print('\tstocks:',stocks)
 
-	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset)
+	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset)
 
 if __name__ == '__main__':
 	delta=-time.time()
