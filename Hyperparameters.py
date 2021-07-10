@@ -44,7 +44,31 @@ class Hyperparameters:
 			self.batch_size=1 # batch size must be one for stateful
 		if len(self.layer_sizes)==self.lstm_layers:
 			self.layer_sizes.insert(0,self.backwards_samples)
-		self.uuid=self.genUuid()
+		self.genAndSetUuid()
+
+	def copy(self):
+		backwards_samples=self.backwards_samples
+		forward_samples=self.forward_samples
+		lstm_layers=self.lstm_layers
+		max_epochs=self.max_epochs
+		patience_epochs=self.patience_epochs
+		batch_size=self.batch_size
+		stateful=self.stateful
+		dropout_values=self.dropout_values.copy()
+		layer_sizes=self.layer_sizes.copy()
+		normalize=self.normalize
+		optimizer=self.optimizer
+		model_metrics=self.model_metrics.copy()
+		loss=self.loss
+		train_percent=self.train_percent
+		val_percent=self.val_percent
+		amount_companies=self.amount_companies
+		input_features=self.input_features.copy()
+		output_feature=self.output_feature
+		index_feature=self.index_feature
+		shuffle=self.shuffle
+		new_hyperparams=Hyperparameters(input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle)
+		return new_hyperparams
 
 	def toString(self):
 		string=''
@@ -70,7 +94,10 @@ class Hyperparameters:
 		string+='shuffle: {}'.format(self.shuffle)
 		return string
 
-	def genUuid(self,low_resolution=False):
+	def genAndSetUuid(self,low_resolution=False):
+		self.uuid=self.genAndGetUuid(low_resolution=low_resolution)
+
+	def genAndGetUuid(self,low_resolution=False):
 		to_hash=self.toString().encode('utf-8')
 		if low_resolution:
 			hash_object=hashlib.md5(to_hash)
