@@ -83,7 +83,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset):
 	crawler=Crawler()
 
 	if 'all' in stocks:
@@ -120,6 +120,11 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	for i,stock in enumerate(stocks):
 		hyperparameters[stock]=hyperparameters_tmp[i]
 	hyperparameters_tmp=[]
+
+	if enrich_dataset:
+		for stock in stocks:
+			neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
+			neuralNetwork.enrichDataset(filepaths[stock])
 	
 	if train_model:
 		for stock in stocks:
@@ -149,7 +154,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]'
+	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]'
 	used_args=[]
 	# args vars
 	train_model=False
@@ -164,9 +169,10 @@ def main(argv):
 	download_if_needed=True
 	start_date=None
 	end_date=None
+	enrich_dataset=False
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date='])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset'])
 	except getopt.GetoptError:
 		print (help_str)
 		sys.exit(2)
@@ -202,6 +208,8 @@ def main(argv):
 			start_date=arg.strip()
 		elif opt == 'end-date':
 			end_date=arg.strip()
+		elif opt == 'enrich-dataset':
+			enrich_dataset=True
 	if len(stocks)==0:
 		stocks.append('all')
 
@@ -223,6 +231,8 @@ def main(argv):
 			restore_checkpoints=True
 		if 'do-not-download' not in used_args:
 			download_if_needed=True
+		if 'enrich-dataset' not in used_args:
+			enrich_dataset=True
 		print('No functional arguments were found, using defaults:')
 		print('\tcmd: python3 main.py --train --eval --plot')
 		print('\ttrain_model:',train_model)
@@ -235,9 +245,10 @@ def main(argv):
 		print('\tforce_no_plots:',force_no_plots)
 		print('\trestore_checkpoints:',restore_checkpoints)
 		print('\tdownload_if_needed:',download_if_needed)
+		print('\tenrich_dataset:',enrich_dataset)
 		print('\tstocks:',stocks)
 
-	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date)
+	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset)
 
 if __name__ == '__main__':
 	delta=-time.time()

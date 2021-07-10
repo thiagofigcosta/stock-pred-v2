@@ -189,3 +189,14 @@ class Utils:
 		if MS > 0:
 			out+='{} milliseconds '.format(MS)
 		return out
+
+	@staticmethod
+	def calcMovingAverage(input_arr,window):
+		i = 0
+		moving_averages = []
+		while i < len(input_arr) - window + 1:
+			this_window = input_arr[i : i + window]
+			window_average = sum(this_window) / window
+			moving_averages.append(window_average)
+			i += 1
+		return moving_averages

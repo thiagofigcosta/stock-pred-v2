@@ -316,6 +316,33 @@ class NeuralNetwork:
 					new_hist[key] = list(map(float, self.history.history[key]))
 		self.history=new_hist
 
+
+	def enrichDataset(self,paths):
+		if type(paths)!=list:
+			paths=[paths]
+		enriched_column_names=('fast_moving_avg','slow_moving_avg')
+		for path in paths:
+			frame=pd.read_csv(path)
+			rows_to_crop=0
+			stock_column=frame[self.hyperparameters.output_feature].tolist()
+			enriched_columns={}
+			for enriched_column_name in enriched_column_names:
+				if enriched_column_name not in frame.columns:
+					# enrich
+					print('Enriching column {} on {}...'.format(enriched_column_name,path))
+					if enriched_column_name == 'fast_moving_avg':
+						enriched_column=Utils.calcMovingAverage(stock_column,3)
+					elif enriched_column_name == 'slow_moving_avg':
+						enriched_column=Utils.calcMovingAverage(stock_column,7)
+					rows_to_crop=max(rows_to_crop,(len(stock_column)-len(enriched_column)))
+					enriched_columns[enriched_column_name]=enriched_column
+			frame = frame.loc[rows_to_crop:]
+			new_size=len(frame.index)
+			for k,v in enriched_columns.items():
+				frame.insert(len(frame.columns), k, v[-new_size:])
+			frame.to_csv(path,index=False)
+
+
 	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False,blocking_plots=False):
 		self.loadDataset(paths,company_index_array=company_index_array,from_date=from_date,plot=plot,train_percent=0,val_percent=0,blocking_plots=blocking_plots)
 
