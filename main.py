@@ -83,7 +83,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date):
 	crawler=Crawler()
 
 	if 'all' in stocks:
@@ -93,9 +93,15 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			if stock not in stocks:
 				stocks.append(stock)
 
-	start_date='01/01/2018'
-	# start_date=Utils.FIRST_DATE
-	end_date='07/05/2021'
+	if start_date is None:
+		start_date=Utils.FIRST_DATE
+	else:
+		Utils.assertDateFormat(start_date)
+
+	if end_date is None:
+		end_date='07/05/2021'
+	else:
+		Utils.assertDateFormat(end_date)
 
 	start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
 	end_date_formated_for_file=''.join(Utils.extractNumbersFromDate(end_date,reverse=True))
@@ -143,7 +149,8 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all'
+	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]'
+	used_args=[]
 	# args vars
 	train_model=False
 	force_train=False
@@ -154,14 +161,17 @@ def main(argv):
 	blocking_plots=False
 	restore_checkpoints=True
 	download_if_needed=True
+	start_date=None
+	end_date=None
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','do-not-restore-checkpoints','do-not-download','stock='])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date='])
 	except getopt.GetoptError:
 		print (help_str)
 		sys.exit(2)
 	for opt, arg in opts:
 		opt=Utils.removeStrPrefix(Utils.removeStrPrefix(opt,'--'),'-')
+		used_args.append(opt)
 		if opt in ('h','help'):
 			print (help_str)
 			sys.exit()
@@ -185,20 +195,32 @@ def main(argv):
 			download_if_needed=False
 		elif opt == 'stock':
 			stocks.append(arg.strip())
+		elif opt == 'start-date':
+			start_date=arg.strip()
+		elif opt == 'end-date':
+			end_date=arg.strip()
 	if len(stocks)==0:
 		stocks.append('all')
 
-	if len(opts) == 0 or (len(opts) == 1 and opts[0][0]=='--stock'):
+	functional_args=('train','force-train','eval')
+	if len(opts) == 0 or not any(i in used_args for i in functional_args):
 		train_model=True
 		force_train=False
 		eval_model=True
-		plot=True
-		plot_eval=False
-		plot_dataset=False
-		blocking_plots=False
-		restore_checkpoints=True
-		download_if_needed=True
-		print('No arguments were found, using defaults:')
+
+		if 'plot' not in used_args:
+			plot=True
+		if 'plot-eval' not in used_args:
+			plot_eval=False
+		if 'plot-dataset' not in used_args:
+			plot_dataset=False
+		if 'blocking-plots' not in used_args:
+			blocking_plots=False
+		if 'do-not-restore-checkpoints' not in used_args:
+			restore_checkpoints=True
+		if 'do-not-download' not in used_args:
+			download_if_needed=True
+		print('No functional arguments were found, using defaults:')
 		print('\tcmd: python3 main.py --train --eval --plot')
 		print('\ttrain_model:',train_model)
 		print('\tforce_train:',force_train)
@@ -211,7 +233,7 @@ def main(argv):
 		print('\tdownload_if_needed:',download_if_needed)
 		print('\tstocks:',stocks)
 
-	run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks)
+	run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date)
 
 if __name__ == '__main__':
 	delta=-time.time()

@@ -155,6 +155,13 @@ class Utils:
 		return text
 
 	@staticmethod
+	def assertDateFormat(date_str, date_format=DATE_FORMAT):
+		try:
+			dt.datetime.strptime(date_str, date_format)
+		except ValueError:
+			raise Exception('The date ({}) must obey the {} format and must be a valid date'.format(date_str,date_format))
+
+	@staticmethod
 	def msToHumanReadable(timestamp):
 		timestamp=int(timestamp)
 		D=int(timestamp/1000/60/60/24)
