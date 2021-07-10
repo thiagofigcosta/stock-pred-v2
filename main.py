@@ -93,7 +93,8 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			if stock not in stocks:
 				stocks.append(stock)
 
-	start_date=Utils.FIRST_DATE
+	start_date='01/01/2018'
+	# start_date=Utils.FIRST_DATE
 	end_date='07/05/2021'
 
 	start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))

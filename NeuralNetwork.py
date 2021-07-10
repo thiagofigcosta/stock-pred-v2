@@ -157,7 +157,7 @@ class NeuralNetwork:
 			strategy_metrics={}
 			class_metrics={}
 			if self.hyperparameters.amount_companies>1:
-				company_text='{} of {}'.format(i+1,self.hyperparameters.amount_companies)
+				company_text='{}|{} of {}'.format(self.data.dataset.getDatasetName(at=i),i+1,self.hyperparameters.amount_companies)
 				strategy_metrics['Company']=company_text
 				class_metrics['Company']=company_text
 			strategy_metrics['Daily Swing Trade Return']=swing_return
@@ -193,9 +193,9 @@ class NeuralNetwork:
 				plt.plot(dates[self.hyperparameters.backwards_samples-1:],mean_value_predictions[i], color='c', label='Predicted Mean')
 				plt.plot(dates[self.hyperparameters.backwards_samples-1:],fl_mean_value_predictions[i], color='k', label='Predicted FL Mean')
 				if self.hyperparameters.amount_companies>1:
-					plt.title('Stock values {} | Company {} of {}'.format(self.data.dataset.name,(i+1),self.hyperparameters.amount_companies))
+					plt.title('Stock values {} | Company {} of {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies))
 				else:
-					plt.title('Stock values {}'.format(self.data.dataset.name))
+					plt.title('Stock values {}'.format(self.data.dataset.getDatasetName(at=i)))
 				plt.legend(loc='best')
 				if blocking_plots:
 					plt.show()
@@ -206,7 +206,7 @@ class NeuralNetwork:
 		# print predictions
 		if print_prediction:
 			for i in range(self.hyperparameters.amount_companies):
-				print('Company {} of {}:'.format((i+1),self.hyperparameters.amount_companies))
+				print('Company {} - {} of {}:'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies))
 				summary={}
 				for j in reversed(range(self.hyperparameters.forward_samples)):
 					print('\tPred {} of {}:'.format((self.hyperparameters.forward_samples-j),self.hyperparameters.forward_samples))
@@ -236,9 +236,9 @@ class NeuralNetwork:
 						plt.plot([dates[-1],pred_dates[0]],[real_values[i][-1],pred_values[i][j][0]], color='k', zorder=-666, linewidth=0.5)
 					plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j))
 				if self.hyperparameters.amount_companies>1:
-					plt.title('Pred values {} | Company {} of {}'.format(self.data.dataset.name,(i+1),self.hyperparameters.amount_companies))
+					plt.title('Pred values {} | Company {} of {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies))
 				else:
-					plt.title('Pred values {}'.format(self.data.dataset.name))
+					plt.title('Pred values {}'.format(self.data.dataset.getDatasetName(at=i)))
 				plt.legend(loc='best')
 				if amount_of_previous_data_points>0:
 					plt.xticks(dates[-amount_of_previous_data_points:]+pred_dates,rotation=30,ha='right')
@@ -336,10 +336,11 @@ class NeuralNetwork:
 			raise Exception('Company index array ({}) must have the same lenght than Paths array ({}) '.format(len(company_index_arary),len(paths)))
 
 		# load raw data
+		dataset_names_array=[]
 		full_data=[]
-		dataset_name=''
+		dataset_full_name=''
 		if amount_of_companies>1:
-			dataset_name=[]
+			dataset_full_name=[]
 			frames=[]
 			last_company=None
 			for i in range(len(company_index_array)):
@@ -350,19 +351,21 @@ class NeuralNetwork:
 					current_filename=Utils.filenameFromPath(path)
 					if i!=len(company_index_array)-1:
 						current_filename=current_filename.split('_')[0]
-					dataset_name.append(current_filename)
+					dataset_full_name.append(current_filename.split('_')[0])
+					dataset_names_array.append(current_filename)
 					if len(frames)>0:
 						full_data.append(pd.concat(frames))
 						frames=[]
 				frames.append(pd.read_csv(path))
-			dataset_name='+'.join(dataset_name)
+			dataset_full_name='+'.join(dataset_full_name)
 			if len(frames)>0:
 				full_data.append(pd.concat(frames))
 				frames=[]
 		else:
-			dataset_name=Utils.filenameFromPath(paths[0])
+			dataset_full_name=Utils.filenameFromPath(paths[0])
+			dataset_names_array.append(dataset_full_name.split('_')[0])
 			if len(paths)>1:
-				dataset_name+=str(len(paths))
+				dataset_full_name+=str(len(paths))
 			frames=[]
 			for path in paths:
 				frames.append(pd.read_csv(path))
@@ -398,9 +401,9 @@ class NeuralNetwork:
 
 			if plot:
 				if amount_of_companies==1 :
-					label='Stock Values of {}'.format(dataset_name)
+					label='Stock Values of {}'.format(dataset_full_name)
 				else:
-					label='Stock Values Company {} from {}'.format(i+1,dataset_name)
+					label='Stock Values Company {} from {}'.format(i+1,self.data.dataset.getDatasetName(at=i))
 				plt.plot(full_data[i], label=label)
 				plt.legend(loc='best')
 				if blocking_plots:
@@ -429,10 +432,10 @@ class NeuralNetwork:
 					datasets_to_load[i]['dates']=datasets_to_load[i]['dates'][-minimum_size:]
 				if datasets_to_load[i]['other_features'] is not None:
 					datasets_to_load[i]['other_features']=datasets_to_load[i]['other_features'][-minimum_size:]
-		dataset_name+=extra_dataset_name
+		dataset_full_name+=extra_dataset_name
 
 		# parse dataset
-		parsed_dataset=Dataset(name=dataset_name)
+		parsed_dataset=Dataset(name=dataset_full_name, dataset_names_array=dataset_names_array)
 		for dataset in datasets_to_load:
 			parsed_dataset.addCompany(dataset['main_feature'],date_array=dataset['dates'],features_2d_array=dataset['other_features'])
 

@@ -589,12 +589,19 @@ class Dataset:
 		new_dataset.normalization_method=self.normalization_method
 		new_dataset.normalization_params=self.normalization_params+tuple() # tuple copy
 		new_dataset.data=self.data.copy()
+		new_dataset.dataset_names_array=self.dataset_names_array.copy()
 		return new_dataset
 	
 	def getAbsMaxes(self):
 		return self.data.getAbsMaxes()
 
-	def __init__(self,name):
+	def getDatasetName(self,at=None):
+		if at is not None and at<len(self.dataset_names_array):
+			return self.dataset_names_array[at]
+		else:
+			return self.name
+		
+	def __init__(self,name,dataset_names_array=[]):
 		self.name=name
 		self.data=None
 		self.companies=0
@@ -602,3 +609,4 @@ class Dataset:
 		self.converted_params=tuple()
 		self.normalization_method=None
 		self.normalization_params=tuple()
+		self.dataset_names_array=dataset_names_array
