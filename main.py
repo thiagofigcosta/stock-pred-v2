@@ -129,6 +129,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			new_hyperparameters=hyperparameters[stock][-1].copy()
 			new_hyperparameters.input_features.append(new_input_field)
 			new_hyperparameters.genAndSetUuid()
+			hyperparameters[stock].append(new_hyperparameters)
 	hyperparameters_tmp=[]
 
 	if enrich_dataset:
