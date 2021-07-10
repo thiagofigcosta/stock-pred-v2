@@ -91,6 +91,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	if save_plots:
 		matplotlib.use('Agg')
+		print('Using plot id: ',NeuralNetwork.SAVED_PLOTS_ID)
 
 	if 'all' in stocks:
 		stocks.remove('all')
@@ -163,7 +164,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	if not blocking_plots or save_plots:
 		plt.close() # delete the last and empty figure
-	if not blocking_plots:
+	if not blocking_plots and not save_plots:
 		plt.show()
 
 	
