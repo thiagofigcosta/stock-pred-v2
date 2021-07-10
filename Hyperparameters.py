@@ -24,7 +24,7 @@ class Hyperparameters:
 		self.train_percent=train_percent # [0.6, 0.9] - depends on dataset size
 		self.val_percent=val_percent # [0.1, 0.3] - depends on dataset size
 		self.amount_companies=amount_companies # depends on the problem to be solved
-		self.input_features=input_features # depends on the features, but great chance of being ['Close']
+		self.input_features=list(dict.fromkeys(input_features)) # depends on the features, but great chance of being ['Close']
 		self.output_feature=output_feature # depends on the features, but super huge great hyper chance of being 'Close'
 		self.index_feature=index_feature  # depends on the features, but super huge great hyper chance of being 'Date'
 		self.shuffle=shuffle # [False, True] or [0, 1]

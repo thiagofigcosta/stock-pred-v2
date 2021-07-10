@@ -125,7 +125,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	hyperparameters={}
 	for i,stock in enumerate(stocks):
 		hyperparameters[stock]=[hyperparameters_tmp[i]]
-		for new_input_field in ('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Close','Adj Close'):
+		for new_input_field in ('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Adj Close'):
 			new_hyperparameters=hyperparameters[stock][-1].copy()
 			new_hyperparameters.input_features.append(new_input_field)
 			new_hyperparameters.genAndSetUuid()

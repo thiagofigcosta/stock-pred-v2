@@ -453,7 +453,7 @@ class NeuralNetwork:
 				full_data[i]=full_data[i][pd.to_datetime(from_date,format=Utils.DATE_FORMAT):]
 				d,m,y=Utils.extractNumbersFromDate(from_date)
 				extra_dataset_name='trunc{}{}{}'.format(y,m,d)
-			dataset_to_load['main_feature']=full_data[i][self.hyperparameters.output_feature].values.tolist()
+			dataset_to_load['main_feature']=full_data[i][self.hyperparameters.output_feature].to_list()
 			if len(extra_fields)>0:
 				dataset_to_load['other_features']=full_data[i][extra_fields].values.tolist()
 			datasets_to_load.append(dataset_to_load)	
