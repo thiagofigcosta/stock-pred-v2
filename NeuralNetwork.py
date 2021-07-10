@@ -87,6 +87,12 @@ class NeuralNetwork:
 			data_to_eval.append({'features':self.data.val_x,'labels':self.data.val_y,'index':self.data.val_start_idx,'name':'val'})
 		if self.data.train_start_idx is not None:
 			data_to_eval.append({'features':self.data.train_x,'labels':self.data.train_y,'index':self.data.train_start_idx,'name':'train'})
+
+		eval_type_name=''
+		if len(data_to_eval) >1:
+			eval_type_name='train'
+		else:
+			eval_type_name='test'
 	
 		# predict values
 		for data in data_to_eval:
@@ -178,6 +184,7 @@ class NeuralNetwork:
 			plt.plot(self.history['val_loss'], label='val_loss')
 			plt.legend(loc='best')
 			plt.title('Training loss of {}'.format(self.data.dataset.name))
+			plt.get_current_fig_manager().canvas.set_window_title('Training loss of {}'.format(self.data.dataset.name))
 			if blocking_plots:
 				plt.show()
 			else:
@@ -193,10 +200,11 @@ class NeuralNetwork:
 				plt.plot(dates[self.hyperparameters.backwards_samples-1:],mean_value_predictions[i], color='c', label='Predicted Mean')
 				plt.plot(dates[self.hyperparameters.backwards_samples-1:],fl_mean_value_predictions[i], color='k', label='Predicted FL Mean')
 				if self.hyperparameters.amount_companies>1:
-					plt.title('Stock values {} | Company {} of {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies))
+					plt.title('Stock values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 				else:
-					plt.title('Stock values {}'.format(self.data.dataset.getDatasetName(at=i)))
+					plt.title('Stock values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				plt.legend(loc='best')
+				plt.get_current_fig_manager().canvas.set_window_title('Stock {} values and preds of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
 				if blocking_plots:
 					plt.show()
 				else:
@@ -245,6 +253,7 @@ class NeuralNetwork:
 				else:
 					plt.xticks(pred_dates,rotation=30,ha='right')
 				plt.tight_layout()
+				plt.get_current_fig_manager().canvas.set_window_title('Predictions {}'.format(self.data.dataset.getDatasetName(at=i)))
 				if blocking_plots:
 					plt.show()
 				else:
@@ -428,11 +437,12 @@ class NeuralNetwork:
 
 			if plot:
 				if amount_of_companies==1 :
-					label='Stock Values of {}'.format(dataset_full_name)
+					label='Stock Values of {}'.format(dataset_names_array[i])
 				else:
-					label='Stock Values Company {} from {}'.format(i+1,self.data.dataset.getDatasetName(at=i))
+					label='Stock Values Company {} from {}'.format(i+1,dataset_names_array[i])
 				plt.plot(full_data[i], label=label)
 				plt.legend(loc='best')
+				plt.get_current_fig_manager().canvas.set_window_title('Loaded dataset {}'.format(dataset_names_array[i]))
 				if blocking_plots:
 					plt.show()
 				else:
