@@ -149,7 +149,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]'
+	help_str=r'main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]'
 	used_args=[]
 	# args vars
 	train_model=False
@@ -159,13 +159,14 @@ def main(argv):
 	plot_eval=False
 	plot_dataset=False
 	blocking_plots=False
+	force_no_plots=False
 	restore_checkpoints=True
 	download_if_needed=True
 	start_date=None
 	end_date=None
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date='])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date='])
 	except getopt.GetoptError:
 		print (help_str)
 		sys.exit(2)
@@ -189,6 +190,8 @@ def main(argv):
 			plot_dataset=True
 		elif opt == 'blocking-plots':
 			blocking_plots=True
+		elif opt == 'force-no-plots':
+			force_no_plots=True
 		elif opt == 'do-not-restore-checkpoints':
 			restore_checkpoints=False
 		elif opt == 'do-not-download':
@@ -229,11 +232,12 @@ def main(argv):
 		print('\tplot_eval:',plot_eval)
 		print('\tplot_dataset:',plot_dataset)
 		print('\tblocking_plots:',blocking_plots)
+		print('\tforce_no_plots:',force_no_plots)
 		print('\trestore_checkpoints:',restore_checkpoints)
 		print('\tdownload_if_needed:',download_if_needed)
 		print('\tstocks:',stocks)
 
-	run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date)
+	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date)
 
 if __name__ == '__main__':
 	delta=-time.time()
