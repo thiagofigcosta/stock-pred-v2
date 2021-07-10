@@ -138,12 +138,12 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			neuralNetwork=NeuralNetwork(hyperparameters[stock][0],stock_name=stock,verbose=True)
 			neuralNetwork.enrichDataset(filepaths[stock])
 	
-	if train_model:
+	if train_model or force_train:
 		for stock in stocks:
 			# build and train
 			for hyperparameter in hyperparameters[stock]:
 				neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
-				if not neuralNetwork.checkTrainedModelExists():
+				if not neuralNetwork.checkTrainedModelExists() or force_train:
 					neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots,save_plots=save_plots)
 					neuralNetwork.buildModel()
 					neuralNetwork.train()
