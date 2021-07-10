@@ -120,24 +120,29 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	hyperparameters_tmp=getPredefHyperparams()
 	hyperparameters={}
 	for i,stock in enumerate(stocks):
-		hyperparameters[stock]=hyperparameters_tmp[i]
+		hyperparameters[stock]=[hyperparameters_tmp[i]]
+		for new_input_field in ('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Close','Adj Close'):
+			new_hyperparameters=hyperparameters[stock][-1].copy()
+			new_hyperparameters.input_features.append(new_input_field)
+			new_hyperparameters.genAndSetUuid()
 	hyperparameters_tmp=[]
 
 	if enrich_dataset:
 		for stock in stocks:
-			neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
+			neuralNetwork=NeuralNetwork(hyperparameters[stock][0],stock_name=stock,verbose=True)
 			neuralNetwork.enrichDataset(filepaths[stock])
 	
 	if train_model:
 		for stock in stocks:
 			# build and train
-			neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
-			if not neuralNetwork.checkTrainedModelExists():
-				neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots)
-				neuralNetwork.buildModel()
-				neuralNetwork.train()
-				neuralNetwork.eval(plot=plot,plot_training=plot,blocking_plots=blocking_plots)
-				neuralNetwork.save()
+			for hyperparameter in hyperparameters[stock]:
+				neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
+				if not neuralNetwork.checkTrainedModelExists():
+					neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots)
+					neuralNetwork.buildModel()
+					neuralNetwork.train()
+					neuralNetwork.eval(plot=plot,plot_training=plot,blocking_plots=blocking_plots)
+					neuralNetwork.save()
 	
 	if restore_checkpoints:
 		NeuralNetwork.restoreAllBestModelsCPs() # restore the best models
@@ -145,10 +150,11 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	if eval_model:
 		for stock in stocks:
 			# load
-			neuralNetwork=NeuralNetwork(hyperparameters[stock],stock_name=stock,verbose=True)
-			neuralNetwork.load()
-			neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots)
-			neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots)
+			for hyperparameter in hyperparameters[stock]:
+				neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
+				neuralNetwork.load()
+				neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots)
+				neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots)
 
 	if not blocking_plots:
 		plt.close() # delete the last and empty figure
