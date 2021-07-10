@@ -198,6 +198,7 @@ class NeuralNetwork:
 			if save_plots:
 				# matplotlib.use('Agg')
 				plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_trainning_loss'.format(self.data.dataset.name)))
+				plt.figure()
 			else:
 				if blocking_plots:
 					plt.show()
@@ -222,6 +223,7 @@ class NeuralNetwork:
 				if save_plots:
 					# matplotlib.use('Agg')
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_stock_values_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
+					plt.figure()
 				else:
 					if blocking_plots:
 						plt.show()
@@ -275,6 +277,7 @@ class NeuralNetwork:
 				if save_plots:
 					# matplotlib.use('Agg')
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
+					plt.figure()
 				else:
 					if blocking_plots:
 						plt.show()
@@ -468,6 +471,7 @@ class NeuralNetwork:
 				if save_plots:
 					# matplotlib.use('Agg')
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(dataset_names_array[i])))
+					plt.figure()
 				else:
 					if blocking_plots:
 						plt.show()

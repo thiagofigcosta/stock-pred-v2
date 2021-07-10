@@ -156,7 +156,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 				neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots,save_plots=save_plots)
 				neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots,save_plots=save_plots)
 
-	if not blocking_plots:
+	if not blocking_plots or save_plots:
 		plt.close() # delete the last and empty figure
 		plt.show()
 
@@ -183,6 +183,7 @@ def main(argv):
 	try:
 		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset'])
 	except getopt.GetoptError:
+		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
 		sys.exit(2)
 	for opt, arg in opts:
