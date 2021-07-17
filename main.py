@@ -88,7 +88,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models):
 	crawler=Crawler()
 
 	if save_plots:
@@ -195,7 +195,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 				print('\t {}: {}'.format(solution[0],solution[1:]))
 
 			if plot:
-				plt.scatter(mean_squared_errors,[-el for el in f1s],label='Solution candidates')
+				plt.scatter(mean_squared_errors,[-f1 for f1 in f1s],label='Solution candidates') # f1 is inverted because it is a feature to maximize
 				plt.legend(loc='best')
 				plt.title('Pareto search space')
 				plt.get_current_fig_manager().canvas.set_window_title('Pareto search space')
@@ -209,7 +209,14 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 						plt.show(block=False)
 						plt.figure()
 		else:
-			print('Not enough metrics')
+			print('Not enough metrics to optimize')
+
+	if move_models:
+		print('Backing up models...',end='')
+		paths_to_backup=Utils.getFolderPathsThatMatchesPattern(NeuralNetwork.MODELS_PATH,r'[a-zA-Z0-9]*_.*\.(h5|json|bin)')
+		for path_to_backup in paths_to_backup:
+			Utils.moveFile(path_to_backup,Utils.joinPath(NeuralNetwork.BACKUP_MODELS_PATH, Utils.filenameFromPath(path_to_backup,get_extension=True)))
+		print('OK!')
 
 	if not blocking_plots or save_plots:
 		plt.close() # delete the last and empty figure
@@ -218,7 +225,18 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]'
+	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]'
+	help_str+='\n\n\t\t Example for testing datasets: '
+	help_str+=r"""
+python3 main.py --dummy --clear-plots-models-and-datasets \
+echo -e "2018\n\n" >> log.txt; \
+python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2018 --analyze-metrics --move-models-to-backup >> log.txt ; \
+echo -e "\n\n\n\n2015\n\n" >> log.txt; \
+python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2015 --analyze-metrics --move-models-to-backup >> log.txt; \
+echo -e "\n\n\n\nALL\n\n" >> log.txt; \
+python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --analyze-metrics --move-models-to-backup >> log.txt \
+python3 main.py --dummy --restore-backups >> log.txt
+	"""
 	used_args=[]
 	# args vars
 	train_model=False
@@ -236,9 +254,11 @@ def main(argv):
 	end_date=None
 	enrich_dataset=False
 	analyze_metrics=False
+	move_models=False
+	dummy=False
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics'])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy'])
 	except getopt.GetoptError:
 		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
@@ -289,6 +309,19 @@ def main(argv):
 			Utils.deleteFolderContents(Crawler.DATASET_PATH)
 		elif opt == 'analyze-metrics':
 			analyze_metrics=True
+		elif opt == 'move-models-to-backup':
+			move_models=True
+		elif opt == 'restore-backups':
+			print('Restoring backups...',end='')
+			paths_to_restore=Utils.getFolderPathsThatMatchesPattern(NeuralNetwork.BACKUP_MODELS_PATH,r'[a-zA-Z0-9]*_.*\.(h5|json|bin)')
+			for path_to_restore in paths_to_restore:
+				Utils.moveFile(path_to_restore,Utils.joinPath(NeuralNetwork.MODELS_PATH, Utils.filenameFromPath(path_to_restore,get_extension=True)))
+			print('OK!')
+		elif opt == 'dummy':
+			dummy=True
+
+	if dummy:
+		sys.exit(0)
 
 	if len(stocks)==0:
 		stocks.append('all')
@@ -299,6 +332,7 @@ def main(argv):
 		force_train=False
 		eval_model=True
 		analyze_metrics=False
+		move_models=False
 
 		if 'plot' not in used_args:
 			plot=True
@@ -334,8 +368,9 @@ def main(argv):
 		print('\tstart_date:',start_date)
 		print('\tend_date:',end_date)
 		print('\tanalyze_metrics:',analyze_metrics)
+		print('\tmove_models:',move_models)
 
-	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics)
+	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models)
 
 if __name__ == '__main__':
 	delta=-time.time()

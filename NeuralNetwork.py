@@ -25,6 +25,7 @@ plt.rcParams.update({'figure.max_open_warning': 0})
 
 class NeuralNetwork:
 	MODELS_PATH='saved_models/'
+	BACKUP_MODELS_PATH='saved_models/backups/'
 	SAVED_PLOTS_PATH='saved_plots/'
 	SAVED_PLOTS_COUNTER=0
 	SAVED_PLOTS_ID=rd.randint(0, 666666)
@@ -33,6 +34,7 @@ class NeuralNetwork:
 		if hyperparameters is not None and type(hyperparameters)!=Hyperparameters:
 			raise Exception('Wrong hyperparameters object type')
 		Utils.createFolder(NeuralNetwork.MODELS_PATH)
+		Utils.createFolder(NeuralNetwork.BACKUP_MODELS_PATH)
 		Utils.createFolder(NeuralNetwork.SAVED_PLOTS_PATH)
 		self.hyperparameters=hyperparameters
 		self.verbose=verbose

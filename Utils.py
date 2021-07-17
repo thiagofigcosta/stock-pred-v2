@@ -26,6 +26,10 @@ class Utils:
 		pass
 
 	@staticmethod
+	def moveFile(src_path,dst_path):
+		os.replace(src_path, dst_path)
+
+	@staticmethod
 	def createFolder(path):
 		if not os.path.exists(path):
 			os.makedirs(path, exist_ok=True)
