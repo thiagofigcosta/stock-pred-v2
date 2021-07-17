@@ -31,6 +31,16 @@ class Utils:
 			os.makedirs(path, exist_ok=True)
 
 	@staticmethod
+	def getFolderPathsThatMatchesPattern(folder,pattern):
+		paths=[]
+		if os.path.exists(folder):
+			for filename in os.listdir(folder):
+				if re.match(pattern,filename):
+					file_path = Utils.joinPath(folder,filename)
+					paths.append(file_path)
+		return paths
+
+	@staticmethod
 	def deleteFolderContents(folder):
 		if os.path.exists(folder):
 			for filename in os.listdir(folder):
@@ -120,6 +130,11 @@ class Utils:
 			return re_result.group(1),re_result.group(2),re_result.group(3)
 		else:
 			return re_result.group(3),re_result.group(2),re_result.group(1)
+
+	@staticmethod
+	def extractARegexGroup(string,pattern,group=1):
+		re_result=re.search(pattern, string)
+		return re_result.group(group)
 
 	@staticmethod
 	def filenameFromPath(path,get_extension=False):

@@ -4,6 +4,7 @@
 import sys
 import time
 import getopt
+import pareto
 import matplotlib
 from matplotlib import pyplot as plt
 from Crawler import Crawler
@@ -87,7 +88,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics):
 	crawler=Crawler()
 
 	if save_plots:
@@ -164,6 +165,52 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 				neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots,save_plots=save_plots)
 				neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots,save_plots=save_plots)
 
+	if analyze_metrics:
+		metrics_canditates=Utils.getFolderPathsThatMatchesPattern(NeuralNetwork.MODELS_PATH,r'[a-zA-Z0-9]*_.*metrics\.json')
+		uuids=[]
+		f1s=[]
+		mean_squared_errors=[]
+		for metrics_canditate in metrics_canditates:
+			uuid=Utils.extractARegexGroup(Utils.filenameFromPath(metrics_canditate),r'^([a-zA-Z0-9]*)_.*$')
+			metrics=Utils.loadJson(metrics_canditate)
+			if 'test' in metrics:
+				print('Found test metrics on {}'.format(metrics_canditate))
+				uuids.append(uuid)
+				f1s.append(metrics['test']['Class Metrics']['f1_monark'])
+				mean_squared_errors.append(metrics['test']['Model Metrics']['mean_squared_error'])
+		if len(uuids) > 0:
+			table=[]
+			for i in range(len(uuids)):
+			 	table.append([uuids[i],f1s[i],mean_squared_errors[i]])
+			default_epsilon=1e-9
+			objectives_size=2 #(f1 and mean_squared_error)
+			objectives = list(range(1,objectives_size+1)) # indices of objetives
+			default_epsilons=[default_epsilon]*objectives_size
+			pareto_kwargs={}
+			pareto_kwargs['maximize']=[1] # F1 must be maximized 
+			pareto_kwargs['attribution']=True # F1 must be maximized 
+			solutions = pareto.eps_sort(table, objectives, default_epsilons,**pareto_kwargs)
+			print('Pareto solutions:')
+			for solution in solutions:
+				print('\t {}: {}'.format(solution[0],solution[1:]))
+
+			if plot:
+				plt.scatter(mean_squared_errors,[-el for el in f1s],label='Solution candidates')
+				plt.legend(loc='best')
+				plt.title('Pareto search space')
+				plt.get_current_fig_manager().canvas.set_window_title('Pareto search space')
+				if save_plots:
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_space_{}-{}'.format(start_date_formated_for_file,end_date_formated_for_file)))
+					plt.figure()
+				else:
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
+		else:
+			print('Not enough metrics')
+
 	if not blocking_plots or save_plots:
 		plt.close() # delete the last and empty figure
 	if not blocking_plots and not save_plots:
@@ -171,7 +218,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]'
+	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]'
 	used_args=[]
 	# args vars
 	train_model=False
@@ -188,9 +235,10 @@ def main(argv):
 	start_date=None
 	end_date=None
 	enrich_dataset=False
+	analyze_metrics=False
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets'])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics'])
 	except getopt.GetoptError:
 		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
@@ -239,15 +287,18 @@ def main(argv):
 			Utils.deleteFolderContents(NeuralNetwork.SAVED_PLOTS_PATH)
 			print('Clearing contents of: {}'.format(Crawler.DATASET_PATH))
 			Utils.deleteFolderContents(Crawler.DATASET_PATH)
+		elif opt == 'analyze-metrics':
+			analyze_metrics=True
 
 	if len(stocks)==0:
 		stocks.append('all')
 
-	functional_args=('train','force-train','eval')
+	functional_args=('train','force-train','eval','analyze-metrics')
 	if len(opts) == 0 or not any(i in used_args for i in functional_args):
 		train_model=True
 		force_train=False
 		eval_model=True
+		analyze_metrics=False
 
 		if 'plot' not in used_args:
 			plot=True
@@ -282,8 +333,9 @@ def main(argv):
 		print('\tstocks:',stocks)
 		print('\tstart_date:',start_date)
 		print('\tend_date:',end_date)
+		print('\tanalyze_metrics:',analyze_metrics)
 
-	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset)
+	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics)
 
 if __name__ == '__main__':
 	delta=-time.time()

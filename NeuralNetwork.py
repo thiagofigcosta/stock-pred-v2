@@ -187,8 +187,8 @@ class NeuralNetwork:
 			strategy_metrics['Auto13(${}) Return'.format(Actuator.INITIAL_INVESTIMENT)]=viniccius13_return
 			for key, value in class_metrics_tmp.items():
 				class_metrics[key]=value
-			metrics['Strategy Metrics'].append(strategy_metrics)
-			metrics['Class Metrics'].append(class_metrics)
+			metrics['Strategy Metrics']=strategy_metrics # it was metrics['Strategy Metrics'].append(strategy_metrics) 
+			metrics['Class Metrics']=class_metrics # it was metrics['Class Metrics'].append(class_metrics)
 			if self.verbose:
 				print('Metrics {}:'.format(eval_type_name))
 				Utils.printDict(model_metrics,'Model metrics')
