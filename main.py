@@ -12,13 +12,14 @@ from Hyperparameters import Hyperparameters
 from Utils import Utils
 
 def getPredefHyperparams():
+	MAX_EPOCHS=100
 	hyperparameters=[]
 
 	backwards_samples=30
 	forward_samples=7 
 	lstm_layers=2
 	layer_sizes=[25,15]
-	max_epochs=100
+	max_epochs=MAX_EPOCHS
 	batch_size=5
 	stateful=False
 	dropout_values=0
@@ -32,7 +33,7 @@ def getPredefHyperparams():
 	forward_samples=7 
 	lstm_layers=2
 	layer_sizes=[25,15]
-	max_epochs=100
+	max_epochs=MAX_EPOCHS
 	batch_size=5
 	stateful=False
 	dropout_values=0
@@ -46,7 +47,7 @@ def getPredefHyperparams():
 	forward_samples=7 
 	lstm_layers=3
 	layer_sizes=[40,30,20]
-	max_epochs=100
+	max_epochs=MAX_EPOCHS
 	batch_size=5
 	stateful=False
 	dropout_values=[0,0,0.2]
@@ -60,7 +61,7 @@ def getPredefHyperparams():
 	forward_samples=7 
 	lstm_layers=2
 	layer_sizes=[25,15]
-	max_epochs=100
+	max_epochs=MAX_EPOCHS
 	batch_size=5
 	stateful=True
 	dropout_values=0
@@ -73,7 +74,7 @@ def getPredefHyperparams():
 	forward_samples=7 
 	lstm_layers=1
 	layer_sizes=[25]
-	max_epochs=100
+	max_epochs=MAX_EPOCHS
 	batch_size=5
 	stateful=False
 	dropout_values=0
@@ -125,6 +126,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	hyperparameters_tmp=getPredefHyperparams()
 	hyperparameters={}
 	for i,stock in enumerate(stocks):
+		hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
 		hyperparameters[stock]=[hyperparameters_tmp[i]]
 		for new_input_field in ('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Adj Close'):
 			new_hyperparameters=hyperparameters[stock][-1].copy()
@@ -169,7 +171,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]'
+	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]'
 	used_args=[]
 	# args vars
 	train_model=False
@@ -188,7 +190,7 @@ def main(argv):
 	enrich_dataset=False
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset'])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets'])
 	except getopt.GetoptError:
 		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
@@ -229,6 +231,15 @@ def main(argv):
 			end_date=arg.strip()
 		elif opt == 'enrich-dataset':
 			enrich_dataset=True
+		elif opt == 'clear-plots-models-and-datasets':
+			Utils.deleteFile('log.txt')
+			print('Clearing contents of: {}'.format(NeuralNetwork.MODELS_PATH))
+			Utils.deleteFolderContents(NeuralNetwork.MODELS_PATH)
+			print('Clearing contents of: {}'.format(NeuralNetwork.SAVED_PLOTS_PATH))
+			Utils.deleteFolderContents(NeuralNetwork.SAVED_PLOTS_PATH)
+			print('Clearing contents of: {}'.format(Crawler.DATASET_PATH))
+			Utils.deleteFolderContents(Crawler.DATASET_PATH)
+
 	if len(stocks)==0:
 		stocks.append('all')
 

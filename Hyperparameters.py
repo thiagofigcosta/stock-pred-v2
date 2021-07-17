@@ -7,7 +7,8 @@ import json
 from Utils import Utils
 
 class Hyperparameters:
-	def __init__(self,input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='adam',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True):
+	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='adam',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True):
+		self.name=name
 		self.backwards_samples=backwards_samples # [5, 60]
 		self.forward_samples=forward_samples # [5, 14]
 		self.lstm_layers=lstm_layers # [1, 4]
@@ -47,6 +48,7 @@ class Hyperparameters:
 		self.genAndSetUuid()
 
 	def copy(self):
+		name=self.name
 		backwards_samples=self.backwards_samples
 		forward_samples=self.forward_samples
 		lstm_layers=self.lstm_layers
@@ -67,11 +69,12 @@ class Hyperparameters:
 		output_feature=self.output_feature
 		index_feature=self.index_feature
 		shuffle=self.shuffle
-		new_hyperparams=Hyperparameters(input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle)
+		new_hyperparams=Hyperparameters(name=name,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle)
 		return new_hyperparams
 
 	def toString(self):
 		string=''
+		string+='name: {}'.format(self.name)+', '
 		string+='backwards_samples: {}'.format(self.backwards_samples)+', '
 		string+='forward_samples: {}'.format(self.forward_samples)+', '
 		string+='lstm_layers: {}'.format(self.lstm_layers)+', '
@@ -127,3 +130,7 @@ class Hyperparameters:
 			return int(math.ceil(train_data_size/(a*(layer_input_size+network_output_size))))
 		else:
 			return int(math.ceil(2/3*(layer_input_size+network_output_size)))
+
+	def setName(self,name):
+		self.name=name
+		self.genAndSetUuid()

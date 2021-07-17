@@ -5,6 +5,7 @@ import os
 import re
 import time
 import json
+import shutil
 import codecs
 import joblib
 import numpy as np
@@ -28,6 +29,38 @@ class Utils:
 	def createFolder(path):
 		if not os.path.exists(path):
 			os.makedirs(path, exist_ok=True)
+
+	@staticmethod
+	def deleteFolderContents(folder):
+		if os.path.exists(folder):
+			for filename in os.listdir(folder):
+				file_path = Utils.joinPath(folder,filename)
+				Utils.deletePath(file_path)
+
+	@staticmethod
+	def deletePath(path):
+		if os.path.isdir(path):
+			Utils.deleteFolder(path)
+		elif os.path.isfile(path) or os.path.islink(path):
+			Utils.deleteFile(path)
+		else:
+			print('File {} is a special file.'.format(path))
+
+
+	@staticmethod
+	def deleteFile(path):
+		if os.path.exists(path):
+			os.remove(path)
+		else:
+			print('The file {} does not exist.'.format(path))
+
+
+	@staticmethod
+	def deleteFolder(path):
+		if os.path.exists(path):
+			shutil.rmtree(path)
+		else:
+			print('The folder {} does not exist.'.format(path))
 
 	@staticmethod
 	def checkIfPathExists(path):
