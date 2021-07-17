@@ -41,6 +41,7 @@ class NeuralNetwork:
 		self.model=None
 		self.callbacks=None
 		self.history=[]
+		self.metrics={}
 		if hyperparameters is None:
 			if hyperparameters_path is None:
 				raise Exception('Either the hyperparameters or the hyperparameters_path must be defined')
@@ -74,6 +75,8 @@ class NeuralNetwork:
 		if self.data is None:
 			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
 		self.history=Utils.loadJson(self.getModelPath(self.filenames['history']))
+		if Utils.checkIfPathExists(self.getModelPath(self.filenames['metrics'])):
+			self.metrics=Utils.loadJson(self.getModelPath(self.filenames['metrics']))
 
 	def save(self):
 		self.model.save(self.getModelPath(self.filenames['model']))
@@ -84,6 +87,8 @@ class NeuralNetwork:
 		print('Model Scaler saved at {};'.format(self.getModelPath(self.filenames['scaler'])))
 		Utils.saveJson(self.history,self.getModelPath(self.filenames['history']))
 		print('Model History saved at {};'.format(self.getModelPath(self.filenames['history'])))
+		Utils.saveJson(self.metrics,self.getModelPath(self.filenames['metrics']))
+		print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
 		
 	def train(self):
 		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=self.hyperparameters.batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
@@ -185,6 +190,7 @@ class NeuralNetwork:
 			metrics['Strategy Metrics'].append(strategy_metrics)
 			metrics['Class Metrics'].append(class_metrics)
 			if self.verbose:
+				print('Metrics {}:'.format(eval_type_name))
 				Utils.printDict(model_metrics,'Model metrics')
 				Utils.printDict(class_metrics,'Class metrics')
 				Utils.printDict(strategy_metrics,'Strategy metrics')
@@ -285,8 +291,11 @@ class NeuralNetwork:
 			
 		
 		# save metrics
-		Utils.saveJson(metrics,self.getModelPath(self.filenames['metrics']),sort_keys=False)
-		print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
+		if Utils.checkIfPathExists(self.getModelPath(self.filenames['metrics'])):
+			self.metrics=Utils.loadJson(self.getModelPath(self.filenames['metrics']))
+		self.metrics[eval_type_name]=metrics
+		Utils.saveJson(self.metrics,self.getModelPath(self.filenames['metrics']),sort_keys=False)
+		print('Metrics at {} were updated;'.format(self.getModelPath(self.filenames['metrics'])))
 		return metrics
 		
 

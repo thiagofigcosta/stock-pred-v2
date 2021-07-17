@@ -8,6 +8,7 @@ from Utils import Utils
 
 class Hyperparameters:
 	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='adam',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True):
+		self.uuid=None
 		self.name=name
 		self.backwards_samples=backwards_samples # [5, 60]
 		self.forward_samples=forward_samples # [5, 14]
@@ -34,7 +35,7 @@ class Hyperparameters:
 		if type(self.layer_sizes)==int:
 			self.layer_sizes=[self.layer_sizes]*self.lstm_layers
 		if len(self.dropout_values)!=self.lstm_layers:
-			raise Exception('Wrong dropout_values array size, should be {}'.format(self.lstm_layers))
+			raise Exception('Wrong dropout_values array size, should be {} instead of {}'.format(self.lstm_layers,len(self.dropout_values)))
 		if len(self.layer_sizes)!=self.lstm_layers and not (self.layer_sizes[0]==backwards_samples and len(self.layer_sizes)==self.lstm_layers+1):
 			raise Exception('Wrong layer_sizes array size, should be {}'.format(self.lstm_layers))
 		if len(self.input_features)>1 and self.amount_companies>1:
@@ -111,7 +112,7 @@ class Hyperparameters:
 	@staticmethod
 	def jsonDecoder(obj):
 		if '__type__' in obj and obj['__type__'] == 'Hyperparameters':
-			return Hyperparameters(obj['input_features'],obj['output_feature'],obj['index_feature'],obj['backwards_samples'],obj['forward_samples'],obj['lstm_layers'],obj['max_epochs'],obj['patience_epochs'],obj['batch_size'],obj['stateful'],obj['dropout_values'],obj['layer_sizes'],obj['normalize'],obj['optimizer'],obj['model_metrics'],obj['loss'],obj['train_percent'],obj['val_percent'],obj['amount_companies'],obj['shuffle'])
+			return Hyperparameters(obj['name'],obj['input_features'],obj['output_feature'],obj['index_feature'],obj['backwards_samples'],obj['forward_samples'],obj['lstm_layers'],obj['max_epochs'],obj['patience_epochs'],obj['batch_size'],obj['stateful'],obj['dropout_values'],obj['layer_sizes'],obj['normalize'],obj['optimizer'],obj['model_metrics'],obj['loss'],obj['train_percent'],obj['val_percent'],obj['amount_companies'],obj['shuffle'])
 		return obj
 
 	@staticmethod
