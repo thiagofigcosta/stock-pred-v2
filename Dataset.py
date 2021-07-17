@@ -402,6 +402,56 @@ class Dataset:
 		# Y (samples, for/backwards, company)
 		if not self.converted:
 			raise Exception('Not converted yet')
+		normalize=self.setNormalizationMethod(normalization,external_maxes)
+		X=[]
+		Y=[]
+		i=0
+		start_index=None
+		cur=self.data
+		while True:
+			if (not only_test_data and (not cur.has_only_indexes and not cur.has_only_previous_values and (cur.forward_values is not None or include_test_data))) or (only_test_data and cur.forward_values is None and not cur.has_only_previous_values and not cur.has_only_indexes):
+				if start_index is None:
+					start_index=i
+				x=np.array(cur.backward_values, ndmin=2, order='C', subok=True, dtype=float)
+				if len(x.shape)==2:
+					x=np.flip(x, 1)
+					x=np.expand_dims(x,axis=1)
+				if normalize:
+					x=self.normalizeXDatasetEntry(x)
+				X.append(x)
+				if cur.forward_values is not None:
+					y=np.array(cur.forward_values, ndmin=2, order='C', subok=True, dtype=float)
+					if normalize:
+						y=self.normalizeYDatasetEntry(y)
+					Y.append(y)
+			if cur.next is None:
+				break
+			cur=cur.next
+			i+=1
+		X=np.array(X, order='C', subok=True, dtype=float)
+		Y=np.array(Y, order='C', subok=True, dtype=float)
+		X=self.reshapeFeaturesToNeuralNetwork(X)
+		Y=self.reshapeLabelsToNeuralNetwork(Y)
+		return start_index,X,Y
+
+	def normalizeXDatasetEntry(self,x):
+		for a,el_1 in enumerate(x):
+			if type(el_1) in (list,np.ndarray):
+				for b,el_2 in enumerate(el_1):
+					if type(el_2) in (list,np.ndarray):
+						for c,el_3 in enumerate(el_2):
+							x[a][b][c]=el_3/float(self.normalization_params[c])
+		return x
+
+
+	def normalizeYDatasetEntry(self,y):
+		for a,el_1 in enumerate(y):
+			if type(el_1) in (list,np.ndarray):
+				for b,el_2 in enumerate(el_1):
+					y[a][b]=el_2/float(self.normalization_params[0])
+		return y
+
+	def setNormalizationMethod(self,normalization=Normalization.DONT_NORMALIZE,external_maxes=None):
 		normalize=False
 		self.normalization_method=normalization
 		if normalization in (Dataset.Normalization.NORMALIZE,Dataset.Normalization.NORMALIZE_WITH_GAP):
@@ -418,45 +468,7 @@ class Dataset:
 				raise Exception('Provide an external maxes tuple')
 			self.normalization_params=external_maxes
 			normalize=True
-			
-		X=[]
-		Y=[]
-		i=0
-		start_index=None
-		cur=self.data
-		while True:
-			if (not only_test_data and (not cur.has_only_indexes and not cur.has_only_previous_values and (cur.forward_values is not None or include_test_data))) or (only_test_data and cur.forward_values is None and not cur.has_only_previous_values and not cur.has_only_indexes):
-				if start_index is None:
-					start_index=i
-				x=np.array(cur.backward_values, ndmin=2, order='C', subok=True, dtype=float)
-				if len(x.shape)==2:
-					x=np.flip(x, 1)
-					x=np.expand_dims(x,axis=1)
-				if normalize:
-					for a,el_1 in enumerate(x):
-						if type(el_1) in (list,np.ndarray):
-							for b,el_2 in enumerate(el_1):
-								if type(el_2) in (list,np.ndarray):
-									for c,el_3 in enumerate(el_2):
-										x[a][b][c]=el_3/float(self.normalization_params[c])
-				X.append(x)
-				if cur.forward_values is not None:
-					y=np.array(cur.forward_values, ndmin=2, order='C', subok=True, dtype=float)
-					if normalize:
-						for a,el_1 in enumerate(y):
-							if type(el_1) in (list,np.ndarray):
-								for b,el_2 in enumerate(el_1):
-									y[a][b]=el_2/float(self.normalization_params[0])
-					Y.append(y)
-			if cur.next is None:
-				break
-			cur=cur.next
-			i+=1
-		X=np.array(X, order='C', subok=True, dtype=float)
-		Y=np.array(Y, order='C', subok=True, dtype=float)
-		X=self.reshapeFeaturesToNeuralNetwork(X)
-		Y=self.reshapeLabelsToNeuralNetwork(Y)
-		return start_index,X,Y
+		return normalize
 
 	def setNeuralNetworkResultArray(self,start_index,Y):
 		if not self.converted:
@@ -600,6 +612,18 @@ class Dataset:
 			return self.dataset_names_array[at]
 		else:
 			return self.name
+
+	def getValuesSplittedByFeature(self,normalize=False):
+		raw_values=self.data.getValues(degree=0,only_main_value=False,no_simplification=True)
+		features=len(raw_values[0][0])
+		processed_values=[[[] for _ in range(features)] for _ in range(self.companies)]
+		for entry in raw_values:
+			for i,company in enumerate(entry):
+				for j,feature in enumerate(company):
+					if normalize:
+						feature/=self.normalization_params[j] # throws exception if normalization_params is not set
+					processed_values[i][j].append(feature)
+		return processed_values				
 		
 	def __init__(self,name,dataset_names_array=[]):
 		self.name=name

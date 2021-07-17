@@ -458,23 +458,6 @@ class NeuralNetwork:
 				dataset_to_load['other_features']=full_data[i][extra_fields].values.tolist()
 			datasets_to_load.append(dataset_to_load)	
 
-			if plot:
-				if amount_of_companies==1 :
-					label='Stock Values of {}'.format(dataset_names_array[i])
-				else:
-					label='Stock Values Company {} from {}'.format(i+1,dataset_names_array[i])
-				plt.plot(full_data[i], label=label)
-				plt.legend(loc='best')
-				plt.get_current_fig_manager().canvas.set_window_title('Loaded dataset {}'.format(dataset_names_array[i]))
-				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(dataset_names_array[i])))
-					plt.figure()
-				else:
-					if blocking_plots:
-						plt.show()
-					else:
-						plt.show(block=False)
-						plt.figure()
 		# truncate multiple companies
 		if amount_of_companies>1:
 			first_common_date=None
@@ -509,6 +492,33 @@ class NeuralNetwork:
 		self.data=NNDatasetContainer(parsed_dataset,scaler,train_percent,val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
 		self.data.deployScaler()
 		self.data.generateNNArrays()
+
+		# plot
+		if plot:
+			# plt_indedex=self.data.dataset.getIndexes()
+			plt_values=self.data.getValuesSplittedByFeature()
+			for c,plt_company in enumerate(plt_values):
+				for f,features in enumerate(plt_company):
+					if f==0:
+						label='Stock Values of {}'.format(self.data.dataset.getDatasetName(at=c))
+					else:
+						label='Feature {} of Company {}'.format(self.hyperparameters.input_features[f],self.data.dataset.getDatasetName(at=c))
+					# plt.plot(plt_indedex,features, label=label)
+					plt.plot(features, label=label)
+				plt.legend(loc='best')
+				plt_title='Loaded dataset {}'.format(self.data.dataset.getDatasetName(at=c))
+				if self.hyperparameters.normalize:
+					plt_title+=' - normalized'
+				plt.get_current_fig_manager().canvas.set_window_title(plt_title)
+				if save_plots:
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(self.data.dataset.getDatasetName(at=c))))
+					plt.figure()
+				else:
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
 
 	@staticmethod
 	def restoreAllBestModelsCPs(print_models=False):
