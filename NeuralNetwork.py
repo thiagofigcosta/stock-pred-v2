@@ -52,8 +52,16 @@ class NeuralNetwork:
 			self.setFilenames()
 
 	@staticmethod
-	def getNextPlotFilepath(prefix='plot'):
-		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,'{}_{}--{}.png'.format(prefix,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID))
+	def getNextPlotFilepath(prefix='plot',hyperparameters=None):
+		if hyperparameters is None:
+			filename='{}-id-{}-gid-{}.png'.format(prefix,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID)
+		else:
+			max_uuid_length=10
+			label=hyperparameters.uuid[:max_uuid_length]
+			if len(hyperparameters.uuid)>max_uuid_length:
+				label+='...'
+			filename='{}-{}-id-{}-gid-{}.png'.format(prefix,label,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID)
+		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,filename)
 		NeuralNetwork.SAVED_PLOTS_COUNTER+=1
 		return plotpath
 
@@ -205,7 +213,7 @@ class NeuralNetwork:
 			plt.title('Training loss of {}'.format(self.data.dataset.name))
 			plt.get_current_fig_manager().canvas.set_window_title('Training loss of {}'.format(self.data.dataset.name))
 			if save_plots:
-				plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_trainning_loss'.format(self.data.dataset.name)))
+				plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_trainning_loss'.format(self.data.dataset.name),hyperparameters=self.hyperparameters))
 				plt.figure()
 			else:
 				if blocking_plots:
@@ -229,7 +237,7 @@ class NeuralNetwork:
 				plt.legend(loc='best')
 				plt.get_current_fig_manager().canvas.set_window_title('Stock {} values of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_stock_values_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_stock_values_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
 					plt.figure()
 				else:
 					if blocking_plots:
@@ -282,7 +290,7 @@ class NeuralNetwork:
 				plt.tight_layout()
 				plt.get_current_fig_manager().canvas.set_window_title('Predictions {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name)))
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
 					plt.figure()
 				else:
 					if blocking_plots:
@@ -522,7 +530,7 @@ class NeuralNetwork:
 					plt_title+=' - normalized'
 				plt.get_current_fig_manager().canvas.set_window_title(plt_title)
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(self.data.dataset.getDatasetName(at=c))))
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(self.data.dataset.getDatasetName(at=c)),hyperparameters=self.hyperparameters))
 					plt.figure()
 				else:
 					if blocking_plots:

@@ -88,19 +88,14 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks):
 	crawler=Crawler()
 
 	if save_plots:
 		matplotlib.use('Agg')
 		print('Using plot id: ',NeuralNetwork.SAVED_PLOTS_ID)
 
-	if 'all' in stocks:
-		stocks.remove('all')
-		all_known_stocks=['CESP3.SA','CPLE6.SA','CSMG3.SA','ENBR3.SA','TRPL4.SA']
-		for stock in all_known_stocks:
-			if stock not in stocks:
-				stocks.append(stock)
+	print('Running for stocks: {}'.format(','.join(stocks)))
 
 	if start_date is None:
 		start_date=Utils.FIRST_DATE
@@ -125,15 +120,32 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			# crawler.downloadStockDataCustomInterval(stock,filename,data_range='max') # just example
 	
 	hyperparameters_tmp=getPredefHyperparams()
+	if not all_hyper_for_all_stocks: # then create a circular"ish" list, only works when running all stocks together, otherwise it will always use the first
+		if len(stocks) > len(hyperparameters_tmp):
+			for i in range(len(stocks)-len(hyperparameters_tmp)):
+				hyperparameters_tmp.append(hyperparameters_tmp[i%len(hyperparameters_tmp)].copy())
+	
 	hyperparameters={}
 	for i,stock in enumerate(stocks):
-		hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
-		hyperparameters[stock]=[hyperparameters_tmp[i]]
-		for new_input_field in ('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Adj Close'):
-			new_hyperparameters=hyperparameters[stock][-1].copy()
-			new_hyperparameters.input_features.append(new_input_field)
-			new_hyperparameters.genAndSetUuid()
-			hyperparameters[stock].append(new_hyperparameters)
+		new_input_fields=('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Adj Close')
+		if all_hyper_for_all_stocks:
+			hyperparameters[stock]=[]
+			for hyper in hyperparameters_tmp:
+				hyper.setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
+				hyperparameters[stock].append(hyper.copy())
+				for new_input_field in new_input_fields:
+					new_hyperparameters=hyper.copy()
+					new_hyperparameters.input_features.append(new_input_field)
+					new_hyperparameters.genAndSetUuid()
+					hyperparameters[stock].append(new_hyperparameters)
+		else:
+			hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
+			hyperparameters[stock]=[hyperparameters_tmp[i]]
+			for new_input_field in new_input_fields:
+				new_hyperparameters=hyperparameters[stock][-1].copy()
+				new_hyperparameters.input_features.append(new_input_field)
+				new_hyperparameters.genAndSetUuid()
+				hyperparameters[stock].append(new_hyperparameters)
 	hyperparameters_tmp=[]
 
 	if enrich_dataset:
@@ -190,17 +202,51 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			pareto_kwargs['maximize']=[1] # F1 must be maximized 
 			pareto_kwargs['attribution']=True # F1 must be maximized 
 			solutions = pareto.eps_sort(table, objectives, default_epsilons,**pareto_kwargs)
+			solution_labels=[]
+			solution_coordinates=[[] for _ in range(objectives_size)]
 			print('Pareto solutions:')
 			for solution in solutions:
+				solution_labels.append(solution[0])
+				for i in range(objectives_size):
+					solution_coordinates[i].append(solution[1+i])
 				print('\t {}: {}'.format(solution[0],solution[1:]))
 
 			if plot:
-				plt.scatter(mean_squared_errors,[-f1 for f1 in f1s],label='Solution candidates') # f1 is inverted because it is a feature to maximize
+				# candidates and solutions
+				plt.scatter([-f1 for f1 in f1s],mean_squared_errors,label='Solution candidates',color='blue') # f1 is inverted because it is a feature to maximize
+				plt.scatter([-f1 for f1 in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1 is inverted because it is a feature to maximize
+				plt.xlabel('f1 score')
+				plt.ylabel('mean squared error')
 				plt.legend(loc='best')
 				plt.title('Pareto search space')
 				plt.get_current_fig_manager().canvas.set_window_title('Pareto search space')
 				if save_plots:
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_space_{}-{}'.format(start_date_formated_for_file,end_date_formated_for_file)))
+					plt.figure()
+				else:
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
+
+				# solutions only
+				plt.scatter([-f1 for f1 in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1 is inverted because it is a feature to maximize
+				max_uuid_length=10
+				for i in range(len(solution_labels)):
+					label=solution_labels[i][:max_uuid_length]
+					if len(solution_labels[i])>max_uuid_length:
+						label+='...'
+					plt.annotate(label,xy=(-solution_coordinates[0][i],solution_coordinates[1][i]),ha='center',fontsize=8,xytext=(0,8),textcoords='offset points')
+				y_offset=max(solution_coordinates[1])*0.1
+				plt.ylim([min(solution_coordinates[1])-y_offset, max(solution_coordinates[1])+y_offset])
+				plt.xlabel('f1 score')
+				plt.ylabel('mean squared error')
+				plt.legend(loc='best')
+				plt.title('Pareto solutions')
+				plt.get_current_fig_manager().canvas.set_window_title('Pareto solutions')
+				if save_plots:
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_solutions_{}-{}'.format(start_date_formated_for_file,end_date_formated_for_file)))
 					plt.figure()
 				else:
 					if blocking_plots:
@@ -225,16 +271,26 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	
 def main(argv):
-	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]'
+
+	all_known_stocks=[
+						'GOOG','AMD','CSCO','TSLA', # international companies
+						'T','IBM', # dividend aristocrats
+						'BTC-USD',	# crypto currencies
+						'BRL=X', # currency exchange rate 
+						r'%5EDJI',r'%5EBVSP', # stock market indexes
+						'CESP3.SA','CPLE6.SA','CSMG3.SA','ENBR3.SA','TRPL4.SA' # brazilian stable companies
+					]
+
+	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]\n\t[--run-all-stocks-together]\n\t[--use-all-hyper-on-all-stocks] *warning: heavy'
 	help_str+='\n\n\t\t Example for testing datasets: '
 	help_str+=r"""
 python3 main.py --dummy --clear-plots-models-and-datasets \
 echo -e "2018\n\n" >> log.txt; \
-python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2018 --analyze-metrics --move-models-to-backup >> log.txt ; \
+python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2018 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt ; \
 echo -e "\n\n\n\n2015\n\n" >> log.txt; \
-python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2015 --analyze-metrics --move-models-to-backup >> log.txt; \
+python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2015 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
 echo -e "\n\n\n\nALL\n\n" >> log.txt; \
-python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --analyze-metrics --move-models-to-backup >> log.txt \
+python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt \
 python3 main.py --dummy --restore-backups >> log.txt
 	"""
 	used_args=[]
@@ -256,9 +312,11 @@ python3 main.py --dummy --restore-backups >> log.txt
 	analyze_metrics=False
 	move_models=False
 	dummy=False
+	run_stocks_together=False
+	all_hyper_for_all_stocks=False
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy'])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy','run-all-stocks-together','use-all-hyper-on-all-stocks'])
 	except getopt.GetoptError:
 		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
@@ -277,6 +335,10 @@ python3 main.py --dummy --restore-backups >> log.txt
 			eval_model=True
 		elif opt in ('p','plot'):
 			plot=True
+		elif opt == 'use-all-hyper-on-all-stocks':
+			all_hyper_for_all_stocks=True
+		elif opt == 'run-all-stocks-together':
+			run_stocks_together=True
 		elif opt == 'plot-eval':
 			plot_eval=True
 		elif opt == 'plot-dataset':
@@ -323,10 +385,15 @@ python3 main.py --dummy --restore-backups >> log.txt
 	if dummy:
 		sys.exit(0)
 
-	if len(stocks)==0:
-		stocks.append('all')
+	if len(stocks)==0:	
+		for stock in all_known_stocks:
+			stocks.append(stock)
 
-	functional_args=('train','force-train','eval','analyze-metrics')
+	functional_args=('analyze-metrics','train','force-train','eval')
+	if 'analyze-metrics' in used_args and not any(i in used_args for i in functional_args[1:]):
+		print('Running only analyze metrics')
+		run_stocks_together=True
+
 	if len(opts) == 0 or not any(i in used_args for i in functional_args):
 		train_model=True
 		force_train=False
@@ -369,8 +436,18 @@ python3 main.py --dummy --restore-backups >> log.txt
 		print('\tend_date:',end_date)
 		print('\tanalyze_metrics:',analyze_metrics)
 		print('\tmove_models:',move_models)
+		print('\trun_stocks_together:',run_stocks_together)
+		print('\tall_hyper_for_all_stocks:',all_hyper_for_all_stocks)
 
-	run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models)
+	if run_stocks_together:
+		stocks=[stocks]
+
+	for stock in stocks:
+		if type(stock) is not list:
+			stocks_to_run=[stock]
+		else:
+			stocks_to_run=stock
+		run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks_to_run,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks)
 
 if __name__ == '__main__':
 	delta=-time.time()
