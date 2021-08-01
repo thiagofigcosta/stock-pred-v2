@@ -261,61 +261,62 @@ class NeuralNetwork:
 						plt.show(block=False)
 						plt.figure()
 
-		# print verification predictions
-		if print_prediction:
-			for i in range(self.hyperparameters.amount_companies):
-				print('Company {} - {} of {}:'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies))
-				summary={}
-				for j in reversed(range(self.hyperparameters.forward_samples)):
-					print('\tPred {} of {}:'.format((self.hyperparameters.forward_samples-j),self.hyperparameters.forward_samples))
-					previous_value=verification_previous_real_value[i]
-					tmp_dates=verification_pred_dates[:len(verification_all_predictions[i][j])]
-					for k,value in enumerate(verification_all_predictions[i][j]):
-						diff=round(verification_all_predictions[i][j][k]-previous_value,2)
-						up=diff>0
-						diff_from_real=round(verification_all_predictions[i][j][k]-verification_real_values[i][k],2)
-						diff_real=round(verification_real_values[i][k]-previous_value,2)
-						up_real=diff_real>0
-						up_ok=up_real==up
-						print('\t\t{}: pred: {:+.2f} pred_delta: {:+.2f} real: {:+.2f} real_delta: {:+.2f} | pred_up: {} real_up: {} - up: {} | diff_pred-real: {}'.format(tmp_dates[k],round(verification_all_predictions[i][j][k],2),diff,round(verification_real_values[i][k],2),diff_real,up,up_real,up_ok,diff_from_real))
-						previous_value=verification_real_values[i][k]
-						if tmp_dates[k] not in summary:
-							summary[tmp_dates[k]]={'pred_up':0,'real_up':0,'pred_down':0,'real_down':0,'up_ok':0}
-						if up:
-							summary[tmp_dates[k]]['pred_up']+=1
-						else:
-							summary[tmp_dates[k]]['pred_down']+=1
-						if up_real:
-							summary[tmp_dates[k]]['real_up']+=1
-						else:
-							summary[tmp_dates[k]]['real_down']+=1
-						if up_ok:
-							summary[tmp_dates[k]]['up_ok']+=1
-				Utils.printDict(summary,'Summary',1)
+		if eval_type_name == 'test':
+			# print verification predictions
+			if print_prediction:
+				for i in range(self.hyperparameters.amount_companies):
+					print('Company {} - {} of {}:'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies))
+					summary={}
+					for j in reversed(range(self.hyperparameters.forward_samples)):
+						print('\tPred {} of {}:'.format((self.hyperparameters.forward_samples-j),self.hyperparameters.forward_samples))
+						previous_value=verification_previous_real_value[i]
+						tmp_dates=verification_pred_dates[:len(verification_all_predictions[i][j])]
+						for k,value in enumerate(verification_all_predictions[i][j]):
+							diff=round(verification_all_predictions[i][j][k]-previous_value,2)
+							up=diff>0
+							diff_from_real=round(verification_all_predictions[i][j][k]-verification_real_values[i][k],2)
+							diff_real=round(verification_real_values[i][k]-previous_value,2)
+							up_real=diff_real>0
+							up_ok=up_real==up
+							print('\t\t{}: pred: {:+.2f} pred_delta: {:+.2f} real: {:+.2f} real_delta: {:+.2f} | pred_up: {} real_up: {} - up: {} | diff_pred-real: {}'.format(tmp_dates[k],round(verification_all_predictions[i][j][k],2),diff,round(verification_real_values[i][k],2),diff_real,up,up_real,up_ok,diff_from_real))
+							previous_value=verification_real_values[i][k]
+							if tmp_dates[k] not in summary:
+								summary[tmp_dates[k]]={'pred_up':0,'real_up':0,'pred_down':0,'real_down':0,'up_ok':0}
+							if up:
+								summary[tmp_dates[k]]['pred_up']+=1
+							else:
+								summary[tmp_dates[k]]['pred_down']+=1
+							if up_real:
+								summary[tmp_dates[k]]['real_up']+=1
+							else:
+								summary[tmp_dates[k]]['real_down']+=1
+							if up_ok:
+								summary[tmp_dates[k]]['up_ok']+=1
+					Utils.printDict(summary,'Summary',1)
 
-		# plot verification predictions
-		if plot:
-			for i in range(self.hyperparameters.amount_companies):
-				plt.plot(verification_pred_dates[:len(verification_real_values[i])],verification_real_values[i], '-o', label='Real')
-				for j in reversed(range(self.hyperparameters.forward_samples)):
-					plt.plot(verification_pred_dates[:len(verification_all_predictions[i][j])],verification_all_predictions[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j), zorder=j)
-				if self.hyperparameters.amount_companies>1:
-					plt.title('Pred verification values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
-				else:
-					plt.title('Pred verification values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
-				plt.legend(loc='best')
-				plt.xticks(verification_pred_dates,rotation=30,ha='right')
-				plt.tight_layout()
-				plt.get_current_fig_manager().canvas.set_window_title('Predictions verification {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
-				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_verify_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
-					plt.figure()
-				else:
-					if blocking_plots:
-						plt.show()
+			# plot verification predictions
+			if plot:
+				for i in range(self.hyperparameters.amount_companies):
+					plt.plot(verification_pred_dates[:len(verification_real_values[i])],verification_real_values[i], '-o', label='Real')
+					for j in reversed(range(self.hyperparameters.forward_samples)):
+						plt.plot(verification_pred_dates[:len(verification_all_predictions[i][j])],verification_all_predictions[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j), zorder=j)
+					if self.hyperparameters.amount_companies>1:
+						plt.title('Pred verification values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 					else:
-						plt.show(block=False)
+						plt.title('Pred verification values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+					plt.legend(loc='best')
+					plt.xticks(verification_pred_dates,rotation=30,ha='right')
+					plt.tight_layout()
+					plt.get_current_fig_manager().canvas.set_window_title('Predictions verification {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+					if save_plots:
+						plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_verify_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
 						plt.figure()
+					else:
+						if blocking_plots:
+							plt.show()
+						else:
+							plt.show(block=False)
+							plt.figure()
 
 		# print future predictions
 		if print_prediction:
