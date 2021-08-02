@@ -281,18 +281,19 @@ def main(argv):
 						'CESP3.SA','CPLE6.SA','CSMG3.SA','ENBR3.SA','TRPL4.SA' # brazilian stable companies
 					]
 
+	python_exec_name=Utils.getPythonExecName()
 	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]\n\t[--run-all-stocks-together]\n\t[--use-all-hyper-on-all-stocks] *warning: heavy'
 	help_str+='\n\n\t\t Example for testing datasets: '
 	help_str+=r"""
-python3 main.py --dummy --clear-plots-models-and-datasets \
+{python} main.py --dummy --clear-plots-models-and-datasets \
 echo -e "2018\n\n" >> log.txt; \
-python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2018 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
+{python} main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2018 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
 echo -e "\n\n\n\n2015\n\n" >> log.txt; \
-python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2015 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
+{python} main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2015 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
 echo -e "\n\n\n\nALL\n\n" >> log.txt; \
-python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt \
-python3 main.py --dummy --restore-backups >> log.txt
-	"""
+{python} main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt \
+{python} main.py --dummy --restore-backups >> log.txt
+	""".format(python=python_exec_name)
 	used_args=[]
 	# args vars
 	train_model=False

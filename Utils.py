@@ -3,6 +3,7 @@
 
 import os
 import re
+import sys
 import time
 import json
 import shutil
@@ -24,6 +25,27 @@ class Utils:
 
 	def __init__(self):
 		pass
+
+	@staticmethod
+	def getPythonVersion(getTuple=False):
+		version=sys.version_info
+		version_tuple=(version.major,version.minor,version.micro)
+		if getTuple:
+			return version.major,version.minor,version.micro
+		else:
+			return '.'.join([str(el) for el in version_tuple])
+	
+	@staticmethod
+	def getPythonExecName():
+		version=Utils.getPythonVersion(getTuple=True)
+		full_name='python{}.{}'.format(version[0],version[1])
+		short_name='python{}'.format(version[0])
+		default_name='python'
+		if shutil.which(full_name) is not None:
+			return full_name
+		if shutil.which(short_name) is not None:
+			return short_name
+		return default_name
 
 	@staticmethod
 	def moveFile(src_path,dst_path):
