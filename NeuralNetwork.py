@@ -53,9 +53,9 @@ class NeuralNetwork:
 			self.setFilenames()
 			
 	@staticmethod
-	def getUuidLabel(hyperparameters, max_uuid_length=10):
-		label=hyperparameters.uuid[:max_uuid_length]
-		if len(hyperparameters.uuid)>max_uuid_length:
+	def getUuidLabel(uuid, max_uuid_length=10):
+		label=uuid[:max_uuid_length]
+		if len(uuid)>max_uuid_length:
 			label+='...'
 		return label
 
@@ -64,7 +64,7 @@ class NeuralNetwork:
 		if hyperparameters is None:
 			filename='{}-id-{}-gid-{}.png'.format(prefix,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID)
 		else:
-			label=NeuralNetwork.getUuidLabel(hyperparameters)
+			label=NeuralNetwork.getUuidLabel(hyperparameters.uuid)
 			filename='{}-{}-id-{}-gid-{}.png'.format(prefix,label,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID)
 		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,filename)
 		NeuralNetwork.SAVED_PLOTS_COUNTER+=1
@@ -275,7 +275,7 @@ class NeuralNetwork:
 			total_samples=0
 			for i in range(self.hyperparameters.amount_companies):
 				if print_prediction:
-					print('Company {} - {} of {} | {}:'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,NeuralNetwork.getUuidLabel(self.hyperparameters)))
+					print('Company {} - {} of {} | {}:'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,NeuralNetwork.getUuidLabel(self.hyperparameters.uuid)))
 				summary={}
 				for j in reversed(range(self.hyperparameters.forward_samples)):
 					if print_prediction:
@@ -313,7 +313,7 @@ class NeuralNetwork:
 					total_samples+=samples
 					ok_rates[i].append(oks/samples*100.0)
 			total_ok_rate=total_oks/total_samples*100.0
-			print('OK_Rate: {:+.2f}%'.format(total_ok_rate))
+			print('OK_Rate: {:.2f}%'.format(total_ok_rate))
 			metrics['Class Metrics']['OK_Rate']=total_ok_rate
 
 			# plot verification predictions
@@ -346,7 +346,6 @@ class NeuralNetwork:
 						plt.title('Verification OK Rate {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 					else:
 						plt.title('Verification OK Rate {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
-					plt.legend(loc='best')
 					plt.xticks(verification_pred_dates,rotation=30,ha='right')
 					plt.tight_layout()
 					plt.get_current_fig_manager().canvas.set_window_title('Verification OK Rate {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
@@ -363,7 +362,7 @@ class NeuralNetwork:
 		# print future predictions
 		if print_prediction:
 			for i in range(self.hyperparameters.amount_companies):
-				print('Company {} - {} of {} | {}:'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,self.hyperparameters.amount_companies,NeuralNetwork.getUuidLabel(self.hyperparameters)))
+				print('Company {} - {} of {} | {}:'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,NeuralNetwork.getUuidLabel(self.hyperparameters.uuid)))
 				summary={}
 				for j in reversed(range(self.hyperparameters.forward_samples)):
 					print('\tPred {} of {}:'.format((self.hyperparameters.forward_samples-j),self.hyperparameters.forward_samples))
