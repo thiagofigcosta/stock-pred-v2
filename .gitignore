@@ -7,6 +7,9 @@ log.txt
 datasets/
 saved_models/
 saved_plots/
+experiment/
+experiments/
+exp.tar.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
