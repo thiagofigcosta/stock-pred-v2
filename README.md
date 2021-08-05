@@ -21,7 +21,8 @@ docker run -d stock-pred:2.0.0
 or
 
 ```
-docker run -d stock-pred:2.0.0 -e RUN_DEFAULT_EXP='True'
+docker run -e RUN_DEFAULT_EXP='True' -d stock-pred:2.0.0
+docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
 ```
 
 ### To access running container
