@@ -164,6 +164,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 					neuralNetwork.train()
 					neuralNetwork.eval(plot=plot,plot_training=plot,blocking_plots=blocking_plots,save_plots=save_plots)
 					neuralNetwork.save()
+					neuralNetwork.destroy()
 	
 	if restore_checkpoints:
 		NeuralNetwork.restoreAllBestModelsCPs() # restore the best models
@@ -176,6 +177,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 				neuralNetwork.load()
 				neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots,save_plots=save_plots)
 				neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots,save_plots=save_plots)
+				neuralNetwork.destroy()
 
 	if analyze_metrics:
 		metrics_canditates=Utils.getFolderPathsThatMatchesPattern(NeuralNetwork.MODELS_PATH,r'[a-zA-Z0-9]*_.*metrics\.json')
@@ -232,11 +234,8 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 				# solutions only
 				plt.scatter([-f1 for f1 in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1 is inverted because it is a feature to maximize
-				max_uuid_length=10
 				for i in range(len(solution_labels)):
-					label=solution_labels[i][:max_uuid_length]
-					if len(solution_labels[i])>max_uuid_length:
-						label+='...'
+					label=NeuralNetwork.getUuidLabel(solution_labels[i])
 					plt.annotate(label,xy=(-solution_coordinates[0][i],solution_coordinates[1][i]),ha='center',fontsize=8,xytext=(0,8),textcoords='offset points')
 				y_offset=max(solution_coordinates[1])*0.1
 				plt.ylim([min(solution_coordinates[1])-y_offset, max(solution_coordinates[1])+y_offset])
