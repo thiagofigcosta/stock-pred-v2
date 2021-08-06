@@ -9,10 +9,8 @@ import json
 import shutil
 import codecs
 import joblib
-import numpy as np
 from datetime import datetime
 import datetime as dt
-import pandas as pd
 
 class Utils:
 	if os.name == 'nt':
@@ -142,7 +140,7 @@ class Utils:
 		return dates
 
 	@staticmethod
-	def timestampToHumanReadable(timestamp,include_time=False,date_format=DATE_FORMAT):
+	def timestampToStrDateTime(timestamp,include_time=False,date_format=DATE_FORMAT):
 		timestamp=int(timestamp)
 		if not include_time :
 			return datetime.fromtimestamp(timestamp).strftime(date_format)
@@ -236,14 +234,18 @@ class Utils:
 			raise Exception('The date ({}) must obey the {} format and must be a valid date'.format(date_str,date_format))
 
 	@staticmethod
-	def msToHumanReadable(timestamp):
-		timestamp=int(timestamp)
-		D=int(timestamp/1000/60/60/24)
-		H=int(timestamp/1000/60/60%24)
-		M=int(timestamp/1000/60%60)
-		S=int(timestamp/1000%60)
-		MS=int(timestamp%1000)
-		out='' if timestamp > 0 else 'FINISHED'
+	def timestampByExtensive(timestamp,seconds=True):
+		if seconds:
+			timestamp_ms=timestamp*1000
+		else:
+			timestamp_ms=timestamp
+		timestamp_ms=int(timestamp_ms)
+		D=int(timestamp_ms/1000/60/60/24)
+		H=int(timestamp_ms/1000/60/60%24)
+		M=int(timestamp_ms/1000/60%60)
+		S=int(timestamp_ms/1000%60)
+		MS=int(timestamp_ms%1000)
+		out='' if timestamp_ms > 0 else 'FINISHED'
 		if D > 0:
 			out+='{} days '.format(D)
 		if D > 0 and MS == 0 and S == 0 and M == 0 and H > 0:

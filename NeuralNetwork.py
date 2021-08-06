@@ -575,7 +575,7 @@ class NeuralNetwork:
 			if self.hyperparameters.index_feature is not None:
 				date_index_array = pd.to_datetime(full_data[i][self.hyperparameters.index_feature])
 				if from_date is not None:
-					from_date_formated=Utils.timestampToHumanReadable(Utils.dateToTimestamp(from_date),date_format='%Y-%m-%d')
+					from_date_formated=Utils.timestampToStrDateTime(Utils.dateToTimestamp(from_date),date_format='%Y-%m-%d')
 					date_index_array=date_index_array[date_index_array >= from_date_formated]
 				full_data[i][self.hyperparameters.index_feature] = date_index_array
 				full_data[i].set_index(self.hyperparameters.index_feature, inplace=True)

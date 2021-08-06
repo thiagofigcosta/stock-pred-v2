@@ -454,4 +454,4 @@ if __name__ == '__main__':
 	delta=-time.time()
 	main(sys.argv[1:])
 	delta+=time.time()
-	print('\n\nTotal run time is {}'.format(Utils.msToHumanReadable(delta*1000)))
+	print('\n\nTotal run time is {}'.format(Utils.timestampByExtensive(delta)))

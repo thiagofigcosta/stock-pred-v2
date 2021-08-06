@@ -39,10 +39,10 @@ class Crawler:
 			raise Exception('Stock timestamp array({}) with different size from stock values array({})'.format(len(timestamps),len(close_values)))
 		CSV='timestamp,Date,Close\n'
 		for i in range(len(timestamps)):
-			CSV+='{},{},{}\n'.format(timestamps[i],Utils.timestampToHumanReadable(timestamps[i],True),close_values[i])
+			CSV+='{},{},{}\n'.format(timestamps[i],Utils.timestampToStrDateTime(timestamps[i],True),close_values[i])
 		return CSV[:-1]
 
-	def downloadStockDailyData(self,stock_name,filename,start_date=Utils.FIRST_DATE,end_date=Utils.timestampToHumanReadable(time.time())):
+	def downloadStockDailyData(self,stock_name,filename,start_date=Utils.FIRST_DATE,end_date=Utils.timestampToStrDateTime(time.time())):
 		if self.source=='yahoo':
 			download_url='{}/download/{}?period1={}&period2={}&interval=1d&events=history&includeAdjustedClose=true'.format(self.yahoo_api,stock_name,Utils.dateToTimestamp(start_date),Utils.dateToTimestamp(end_date))
 			print(download_url)
