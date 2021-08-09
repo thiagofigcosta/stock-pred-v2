@@ -444,14 +444,14 @@ class NeuralNetwork:
 			is_stateful=self.hyperparameters.stateful and not force_stateless
 			if is_stateful:
 				if l==0:
-					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],batch_input_shape=batch_input_shape, stateful=is_stateful, return_sequences=return_sequences))
+					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],batch_input_shape=batch_input_shape, stateful=is_stateful, return_sequences=return_sequences,activation=self.hyperparameters.activation_functions[l]))
 				else:
-					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences))
+					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences,activation=self.hyperparameters.activation_functions[l]))
 			else:
-				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences))
+				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences,activation=self.hyperparameters.activation_functions[l]))
 			if self.hyperparameters.dropout_values[l]>0:
 				model.add(Dropout(self.hyperparameters.dropout_values[l]))
-		model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies))
+		model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation_function=None)) # activation_function=None = 'linear'
 		if self.verbose:
 			print(model.summary())
 		model.compile(loss=self.hyperparameters.loss,optimizer=self.hyperparameters.optimizer,metrics=self.hyperparameters.model_metrics)
