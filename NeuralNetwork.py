@@ -453,7 +453,10 @@ class NeuralNetwork:
 				model.add(Dropout(self.hyperparameters.dropout_values[l]))
 		model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation_function=None)) # activation_function=None = 'linear'
 		if self.verbose:
-			print(model.summary())
+			model_summary_lines=[]
+			model.summary(print_fn=lambda x: model_summary_lines.append(x))
+			model_summary_str='\n'.join(model_summary_lines)+'\n'
+			print(model_summary_str)
 		model.compile(loss=self.hyperparameters.loss,optimizer=self.hyperparameters.optimizer,metrics=self.hyperparameters.model_metrics)
 		early_stopping=EarlyStopping(monitor='val_loss', mode='min', patience=self.hyperparameters.patience_epochs,verbose=1)
 		checkpoint_filename=self.basename+'_cp.h5'
