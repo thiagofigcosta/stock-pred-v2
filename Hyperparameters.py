@@ -7,7 +7,7 @@ import json
 from Utils import Utils
 
 class Hyperparameters:
-	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='adam',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True,activation_functions='sigmoid'):
+	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='rmsprop',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True,activation_functions='tanh',recurrent_activation_functions='sigmoid',bias=True,use_dense_on_output=False,unit_forget_bias=True,go_backwards=False,recurrent_dropout_values=0):
 		self.uuid=None
 		self.name=name
 		self.backwards_samples=backwards_samples # [5, 60]
@@ -20,10 +20,11 @@ class Hyperparameters:
 		self.dropout_values=dropout_values # [0.0, 1.0] * lstm_layers
 		self.layer_sizes=layer_sizes # [10, 80] * lstm_layers (two formulas to approximate that)
 		self.normalize=normalize # [False, True] or [0, 1] - or always True
-		self.optimizer=optimizer # always 'adam'
+		self.optimizer=optimizer # 'adam' or 'sgd' or 'rmsprop'
 		self.model_metrics=model_metrics # always ['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
 		self.loss=loss # always 'mean_squared_error'
-		self.activation_functions=activation_functions # ['tanh','relu','sigmoid']
+		self.activation_functions=activation_functions # ['tanh','relu','sigmoid'] * lstm_layers
+		self.recurrent_activation_functions=recurrent_activation_functions # ['tanh','relu','sigmoid'] * lstm_layers
 		self.train_percent=train_percent # [0.6, 0.9] - depends on dataset size
 		self.val_percent=val_percent # [0.1, 0.3] - depends on dataset size
 		self.amount_companies=amount_companies # depends on the problem to be solved
@@ -31,18 +32,43 @@ class Hyperparameters:
 		self.output_feature=output_feature # depends on the features, but super huge great hyper chance of being 'Close'
 		self.index_feature=index_feature  # depends on the features, but super huge great hyper chance of being 'Date'
 		self.shuffle=shuffle # [False, True] or [0, 1]
-		if type(self.dropout_values)==int:
+		self.bias=bias  # [False, True] * lstm_layers
+		self.use_dense_on_output=use_dense_on_output  # [False, True]
+		self.unit_forget_bias=unit_forget_bias  # [False, True] * lstm_layers
+		self.go_backwards=go_backwards  # [False, True] * lstm_layers
+		self.recurrent_dropout_values=recurrent_dropout_values  # [0.0, 1.0] * lstm_layers
+		if type(self.bias)==bool:
+			self.bias=[self.bias]*self.lstm_layers
+		if type(self.unit_forget_bias)==bool:
+			self.unit_forget_bias=[self.unit_forget_bias]*self.lstm_layers
+		if type(self.go_backwards)==bool:
+			self.go_backwards=[self.go_backwards]*self.lstm_layers
+		if type(self.dropout_values) in (int,float):
 			self.dropout_values=[self.dropout_values]*self.lstm_layers
+		if type(self.recurrent_dropout_values) in (int,float):
+			self.recurrent_dropout_values=[self.recurrent_dropout_values]*self.lstm_layers
 		if type(self.layer_sizes)==int:
 			self.layer_sizes=[self.layer_sizes]*self.lstm_layers
-		if type(self.activation_functions)==int:
+		if type(self.activation_functions)==str:
 			self.activation_functions=[self.activation_functions]*self.lstm_layers
+		if type(self.recurrent_activation_functions)==str:
+			self.recurrent_activation_functions=[self.recurrent_activation_functions]*self.lstm_layers
 		if len(self.dropout_values)!=self.lstm_layers:
 			raise Exception('Wrong dropout_values array size, should be {} instead of {}'.format(self.lstm_layers,len(self.dropout_values)))
 		if len(self.layer_sizes)!=self.lstm_layers and not (self.layer_sizes[0]==backwards_samples and len(self.layer_sizes)==self.lstm_layers+1):
 			raise Exception('Wrong layer_sizes array size, should be {}'.format(self.lstm_layers))
 		if len(self.activation_functions)!=self.lstm_layers:
 			raise Exception('Wrong activation_functions array size, should be {}'.format(self.lstm_layers))
+		if len(self.recurrent_activation_functions)!=self.lstm_layers:
+			raise Exception('Wrong recurrent_activation_functions array size, should be {}'.format(self.lstm_layers))
+		if len(self.bias)!=self.lstm_layers:
+			raise Exception('Wrong bias array size, should be {}'.format(self.lstm_layers))
+		if len(self.unit_forget_bias)!=self.lstm_layers:
+			raise Exception('Wrong unit_forget_bias array size, should be {}'.format(self.lstm_layers))
+		if len(self.go_backwards)!=self.lstm_layers:
+			raise Exception('Wrong go_backwards array size, should be {}'.format(self.lstm_layers))
+		if len(self.recurrent_dropout_values)!=self.lstm_layers:
+			raise Exception('Wrong recurrent_dropout_values array size, should be {}'.format(self.lstm_layers))
 		if len(self.input_features)>1 and self.amount_companies>1:
 			raise Exception('Only input_features or amount_companies must be greater than 1')
 		if self.val_percent>1 or self.train_percent>1 or self.val_percent<0 or self.train_percent<0:
@@ -65,6 +91,8 @@ class Hyperparameters:
 		dropout_values=self.dropout_values.copy()
 		layer_sizes=self.layer_sizes.copy()
 		activation_functions=self.activation_functions.copy()
+		recurrent_activation_functions=self.recurrent_activation_functions.copy()
+		bias=self.bias.copy()
 		normalize=self.normalize
 		optimizer=self.optimizer
 		model_metrics=self.model_metrics.copy()
@@ -76,12 +104,17 @@ class Hyperparameters:
 		output_feature=self.output_feature
 		index_feature=self.index_feature
 		shuffle=self.shuffle
-		new_hyperparams=Hyperparameters(name=name,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions)
+		use_dense_on_output=self.use_dense_on_output
+		unit_forget_bias=self.unit_forget_bias.copy()
+		go_backwards=self.go_backwards.copy()
+		recurrent_dropout_values=self.recurrent_dropout_values.copy()
+		new_hyperparams=Hyperparameters(name=name,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values)
 		return new_hyperparams
 
 	def toString(self):
 		string=''
 		string+='name: {}'.format(self.name)+', '
+		string+='use_dense_on_output: {}'.format(self.use_dense_on_output)+', '
 		string+='backwards_samples: {}'.format(self.backwards_samples)+', '
 		string+='forward_samples: {}'.format(self.forward_samples)+', '
 		string+='lstm_layers: {}'.format(self.lstm_layers)+', '
@@ -92,6 +125,11 @@ class Hyperparameters:
 		string+='dropout_values: {}'.format(self.dropout_values)+', '
 		string+='layer_sizes: {}'.format(self.layer_sizes)+', '
 		string+='activation_functions: {}'.format(self.activation_functions)+', '
+		string+='recurrent_activation_functions: {}'.format(self.recurrent_activation_functions)+', '
+		string+='unit_forget_bias: {}'.format(self.unit_forget_bias)+', '
+		string+='go_backwards: {}'.format(self.go_backwards)+', '
+		string+='recurrent_dropout_values: {}'.format(self.recurrent_dropout_values)+', '
+		string+='bias: {}'.format(self.bias)+', '
 		string+='normalize: {}'.format(self.normalize)+', '
 		string+='optimizer: {}'.format(self.optimizer)+', '
 		string+='model_metrics: {}'.format(self.model_metrics)+', '
@@ -119,7 +157,7 @@ class Hyperparameters:
 	@staticmethod
 	def jsonDecoder(obj):
 		if '__type__' in obj and obj['__type__'] == 'Hyperparameters':
-			return Hyperparameters(obj['name'],obj['input_features'],obj['output_feature'],obj['index_feature'],obj['backwards_samples'],obj['forward_samples'],obj['lstm_layers'],obj['max_epochs'],obj['patience_epochs'],obj['batch_size'],obj['stateful'],obj['dropout_values'],obj['layer_sizes'],obj['normalize'],obj['optimizer'],obj['model_metrics'],obj['loss'],obj['train_percent'],obj['val_percent'],obj['amount_companies'],obj['shuffle'],obj['activation_functions'])
+			return Hyperparameters(name=obj['name'],input_features=obj['input_features'],output_feature=obj['output_feature'],index_feature=obj['index_feature'],backwards_samples=obj['backwards_samples'],forward_samples=obj['forward_samples'],lstm_layers=obj['lstm_layers'],max_epochs=obj['max_epochs'],patience_epochs=obj['patience_epochs'],batch_size=obj['batch_size'],stateful=obj['stateful'],dropout_values=obj['dropout_values'],layer_sizes=obj['layer_sizes'],normalize=obj['normalize'],optimizer=obj['optimizer'],model_metrics=obj['model_metrics'],loss=obj['loss'],train_percent=obj['train_percent'],val_percent=obj['val_percent'],amount_companies=obj['amount_companies'],shuffle=obj['shuffle'],activation_functions=obj['activation_functions'],recurrent_activation_functions=obj['recurrent_activation_functions'],bias=obj['bias'],use_dense_on_output=obj['use_dense_on_output'],unit_forget_bias=obj['unit_forget_bias'],go_backwards=obj['go_backwards'],recurrent_dropout_values=obj['recurrent_dropout_values'])
 		return obj
 
 	@staticmethod

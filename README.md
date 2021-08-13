@@ -2,6 +2,22 @@
 
 based on: https://github.com/thiagofigcosta/Stock-Pred-LSTM
 
+## Host
+
+### Install deps linux:
+```
+pip3 install -r requirements.txt
+```
+
+### Install deps windows:
+Open anaconda console and type:
+```
+pip install pydot
+pip install numpy
+pip install keras
+pip install --user tensorflow
+```
+
 ## Docker
 
 ### To build image

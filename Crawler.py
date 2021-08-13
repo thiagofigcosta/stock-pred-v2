@@ -45,7 +45,7 @@ class Crawler:
 	def downloadStockDailyData(self,stock_name,filename,start_date=Utils.FIRST_DATE,end_date=Utils.timestampToStrDateTime(time.time())):
 		if self.source=='yahoo':
 			download_url='{}/download/{}?period1={}&period2={}&interval=1d&events=history&includeAdjustedClose=true'.format(self.yahoo_api,stock_name,Utils.dateToTimestamp(start_date),Utils.dateToTimestamp(end_date))
-			print(download_url)
+			print('Downloading: {} | to filename: {}'.format(download_url,filename))
 			with urllib.request.urlopen(download_url) as response:
 				if response.code == 200:
 					content=response.read().decode('utf-8')

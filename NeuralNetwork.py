@@ -20,6 +20,7 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers import Dense, Dropout
 from keras.layers import LSTM
 from keras.models import Sequential, load_model
+from keras.utils.vis_utils import plot_model
 from matplotlib import pyplot as plt
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 plt.rcParams.update({'figure.max_open_warning': 0})
@@ -60,14 +61,17 @@ class NeuralNetwork:
 		return label
 
 	@staticmethod
-	def getNextPlotFilepath(prefix='plot',hyperparameters=None):
-		if hyperparameters is None:
-			filename='{}-id-{}-gid-{}.png'.format(prefix,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID)
-		else:
+	def getNextPlotFilepath(prefix='plot',hyperparameters=None,append_ids=True):
+		filename=prefix
+		if hyperparameters is not None:
 			label=NeuralNetwork.getUuidLabel(hyperparameters.uuid)
-			filename='{}-{}-id-{}-gid-{}.png'.format(prefix,label,NeuralNetwork.SAVED_PLOTS_COUNTER,NeuralNetwork.SAVED_PLOTS_ID)
+			filename+='-'+label
+		if append_ids:
+			filename+='-id-'+str(NeuralNetwork.SAVED_PLOTS_COUNTER)
+			filename+='-gid-'+str(NeuralNetwork.SAVED_PLOTS_ID)
+			NeuralNetwork.SAVED_PLOTS_COUNTER+=1
+		filename+='.png'
 		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,filename)
-		NeuralNetwork.SAVED_PLOTS_COUNTER+=1
 		return plotpath
 
 	def setFilenames(self):
@@ -109,7 +113,10 @@ class NeuralNetwork:
 		print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
 		
 	def train(self):
-		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=self.hyperparameters.batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
+		batch_size=None
+		if self.hyperparameters.batch_size > 0:
+			batch_size=self.hyperparameters.batch_size
+		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
 		self.parseHistoryToVanilla()
 		self.statefulModelWorkaround()
 
@@ -431,39 +438,49 @@ class NeuralNetwork:
 			new_model.set_weights(self.model.get_weights())
 			self.model=new_model
 
-	def buildModel(self):
+	def buildModel(self,plot_model_to_file=False):
 		self.model,self.callbacks=self._buildModel()
+		if plot_model_to_file:
+			filepath=NeuralNetwork.getNextPlotFilepath('model_{}'.format(self.hyperparameters.uuid),append_ids=False)
+			if self.verbose:
+				print('Saving model diagram to file: {}'.format(filepath))
+			plot_model(self.model,to_file=filepath,show_shapes=True,show_dtype=False,show_layer_names=True,rankdir="TB",expand_nested=False,dpi=300)
 		
 	def _buildModel(self,force_stateless=False):
 		model=Sequential()
 		input_features_size=len(self.hyperparameters.input_features)
 		for l in range(self.hyperparameters.lstm_layers):
-			input_shape=(self.hyperparameters.layer_sizes[l],self.hyperparameters.amount_companies*input_features_size)
-			batch_input_shape=tuple([self.hyperparameters.batch_size])+input_shape
-			return_sequences=True if l+1<self.hyperparameters.lstm_layers else False
 			is_stateful=self.hyperparameters.stateful and not force_stateless
-			if is_stateful:
-				if l==0:
-					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],batch_input_shape=batch_input_shape, stateful=is_stateful, return_sequences=return_sequences,activation=self.hyperparameters.activation_functions[l]))
-				else:
-					model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences,activation=self.hyperparameters.activation_functions[l]))
+			input_shape=(self.hyperparameters.layer_sizes[l],self.hyperparameters.amount_companies*input_features_size)
+			return_sequences=True if l+1<self.hyperparameters.lstm_layers else not self.hyperparameters.use_dense_on_output
+			batch_input_shape=None
+			if is_stateful and l==0:
+				batch_input_shape=tuple([self.hyperparameters.batch_size])+input_shape
+			if batch_input_shape is not None:
+				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],batch_input_shape=batch_input_shape, stateful=is_stateful, return_sequences=return_sequences,use_bias=self.hyperparameters.bias[l],activation=self.hyperparameters.activation_functions[l],recurrent_activation=self.hyperparameters.recurrent_activation_functions[l],unit_forget_bias=self.hyperparameters.unit_forget_bias[l],recurrent_dropout=self.hyperparameters.recurrent_dropout_values[l],go_backwards=self.hyperparameters.go_backwards[l],time_major=False))
 			else:
-				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences,activation=self.hyperparameters.activation_functions[l]))
+				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences,use_bias=self.hyperparameters.bias[l],activation=self.hyperparameters.activation_functions[l],recurrent_activation=self.hyperparameters.recurrent_activation_functions[l],unit_forget_bias=self.hyperparameters.unit_forget_bias[l],recurrent_dropout=self.hyperparameters.recurrent_dropout_values[l],go_backwards=self.hyperparameters.go_backwards[l],time_major=False))
 			if self.hyperparameters.dropout_values[l]>0:
 				model.add(Dropout(self.hyperparameters.dropout_values[l]))
-		model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation_function=None)) # activation_function=None = 'linear'
+		if self.hyperparameters.use_dense_on_output:
+			model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation='linear')) # activation=None = 'linear'
+		else:
+			model.add(LSTM(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies, activation='linear'))
 		if self.verbose:
 			model_summary_lines=[]
 			model.summary(print_fn=lambda x: model_summary_lines.append(x))
 			model_summary_str='\n'.join(model_summary_lines)+'\n'
 			print(model_summary_str)
 		model.compile(loss=self.hyperparameters.loss,optimizer=self.hyperparameters.optimizer,metrics=self.hyperparameters.model_metrics)
-		early_stopping=EarlyStopping(monitor='val_loss', mode='min', patience=self.hyperparameters.patience_epochs,verbose=1)
+		callbacks=[]
+		if self.hyperparameters.patience_epochs>0:
+			early_stopping=EarlyStopping(monitor='val_loss', mode='min', patience=self.hyperparameters.patience_epochs,verbose=1)
+			callbacks.append(early_stopping)
 		checkpoint_filename=self.basename+'_cp.h5'
 		self.filenames['checkpoint']=checkpoint_filename
 		checkpoint_filepath=Utils.joinPath(NeuralNetwork.MODELS_PATH,checkpoint_filename)
 		checkpoint=ModelCheckpoint(checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
-		callbacks=[early_stopping,checkpoint]
+		callbacks.append(checkpoint)
 		return model,callbacks
 
 	def getModelPath(self,filename):

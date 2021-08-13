@@ -13,7 +13,7 @@ from Hyperparameters import Hyperparameters
 from Utils import Utils
 
 def getPredefHyperparams():
-	MAX_EPOCHS=100
+	MAX_EPOCHS=10
 	hyperparameters=[]
 
 	backwards_samples=30
@@ -21,14 +21,15 @@ def getPredefHyperparams():
 	lstm_layers=2
 	layer_sizes=[25,15]
 	max_epochs=MAX_EPOCHS
-	batch_size=5
+	patience_epochs=0
+	batch_size=0
 	stateful=False
 	dropout_values=0
 	normalize=True
 	train_percent=.8
 	val_percent=.2
 	shuffle=False
-	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent,shuffle=shuffle))
+	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent,shuffle=shuffle))
 	
 	backwards_samples=20
 	forward_samples=7 
@@ -88,7 +89,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper):
 	crawler=Crawler()
 
 	if save_plots:
@@ -115,11 +116,13 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 		filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
 		filepath=crawler.getDatasetPath(filename)
 		filepaths[stock]=filepath
-		if (not Utils.checkIfPathExists(filepath) and download_if_needed) or force_train:
+		if not Utils.checkIfPathExists(filepath) and download_if_needed:
 			crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
 			# crawler.downloadStockDataCustomInterval(stock,filename,data_range='max') # just example
 	
 	hyperparameters_tmp=getPredefHyperparams()
+	if only_first_hyperparam:
+		hyperparameters_tmp=[hyperparameters_tmp[0]]
 	if not all_hyper_for_all_stocks: # then create a circular"ish" list, only works when running all stocks together, otherwise it will always use the first
 		if len(stocks) > len(hyperparameters_tmp):
 			for i in range(len(stocks)-len(hyperparameters_tmp)):
@@ -133,19 +136,21 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			for hyper in hyperparameters_tmp:
 				hyper.setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
 				hyperparameters[stock].append(hyper.copy())
-				for new_input_field in new_input_fields:
-					new_hyperparameters=hyper.copy()
-					new_hyperparameters.input_features.append(new_input_field)
-					new_hyperparameters.genAndSetUuid()
-					hyperparameters[stock].append(new_hyperparameters)
+				if add_more_fields_to_hyper:
+					for new_input_field in new_input_fields:
+						new_hyperparameters=hyper.copy()
+						new_hyperparameters.input_features.append(new_input_field)
+						new_hyperparameters.genAndSetUuid()
+						hyperparameters[stock].append(new_hyperparameters)
 		else:
 			hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
 			hyperparameters[stock]=[hyperparameters_tmp[i]]
-			for new_input_field in new_input_fields:
-				new_hyperparameters=hyperparameters[stock][-1].copy()
-				new_hyperparameters.input_features.append(new_input_field)
-				new_hyperparameters.genAndSetUuid()
-				hyperparameters[stock].append(new_hyperparameters)
+			if add_more_fields_to_hyper:
+				for new_input_field in new_input_fields:
+					new_hyperparameters=hyperparameters[stock][-1].copy()
+					new_hyperparameters.input_features.append(new_input_field)
+					new_hyperparameters.genAndSetUuid()
+					hyperparameters[stock].append(new_hyperparameters)
 	hyperparameters_tmp=[]
 
 	if enrich_dataset:
@@ -160,7 +165,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 				neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
 				if not neuralNetwork.checkTrainedModelExists() or force_train:
 					neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots,save_plots=save_plots)
-					neuralNetwork.buildModel()
+					neuralNetwork.buildModel(plot_model_to_file=plot)
 					neuralNetwork.train()
 					neuralNetwork.eval(plot=plot,plot_training=plot,blocking_plots=blocking_plots,save_plots=save_plots)
 					neuralNetwork.save()
@@ -281,19 +286,19 @@ def main(argv):
 					]
 
 	python_exec_name=Utils.getPythonExecName()
-	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]\n\t[--run-all-stocks-together]\n\t[--use-all-hyper-on-all-stocks] *warning: heavy'
+	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]\n\t[--run-all-stocks-together]\n\t[--use-all-hyper-on-all-stocks] *warning: heavy\n\t[--only-first-hyperparam]\n\t[--do-not-test-hyperparams-with-more-fields]'
 	help_str+='\n\n\t\t Example for testing datasets: '
 	help_str+=r"""
 {python} main.py --dummy --clear-plots-models-and-datasets \
 echo -e "2018\n\n" >> log.txt; \
-{python} main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2018 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
+{python} main.py --train --eval --plot --plot-eval --save-plots --enrich-dataset --start-date 01/01/2018 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
 echo -e "\n\n\n\n2015\n\n" >> log.txt; \
-{python} main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --start-date 01/01/2015 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
+{python} main.py --train --eval --plot --plot-eval --save-plots --enrich-dataset --start-date 01/01/2015 --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt; \
 echo -e "\n\n\n\nALL\n\n" >> log.txt; \
-{python} main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --enrich-dataset --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt \
+{python} main.py --train --eval --plot --plot-eval --save-plots --enrich-dataset --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt \
 {python} main.py --dummy --restore-backups >> log.txt; \
 echo -e "\n\n\nDONE\n" >> log.txt
-	""".format(python=python_exec_name)
+	""".format(python=python_exec_name) # FAST RUN: --force-train -e -p --plot-eval --enrich-dataset --start-date 01/01/2018 --stock GOOG --clear-plots-models-and-datasets --analyze-metrics --only-first-hyperparam --do-not-test-hyperparams-with-more-fields
 	used_args=[]
 	# args vars
 	train_model=False
@@ -315,9 +320,11 @@ echo -e "\n\n\nDONE\n" >> log.txt
 	dummy=False
 	run_stocks_together=False
 	all_hyper_for_all_stocks=False
+	only_first_hyperparam=False
+	add_more_fields_to_hyper=True
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy','run-all-stocks-together','use-all-hyper-on-all-stocks'])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy','run-all-stocks-together','use-all-hyper-on-all-stocks','only-first-hyperparam','do-not-test-hyperparams-with-more-fields'])
 	except getopt.GetoptError:
 		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
@@ -350,6 +357,8 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			save_plots=True
 		elif opt == 'force-no-plots':
 			force_no_plots=True
+		elif opt == 'do-not-test-hyperparams-with-more-fields':
+			add_more_fields_to_hyper=False
 		elif opt == 'do-not-restore-checkpoints':
 			restore_checkpoints=False
 		elif opt == 'do-not-download':
@@ -362,6 +371,8 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			end_date=arg.strip()
 		elif opt == 'enrich-dataset':
 			enrich_dataset=True
+		elif opt == 'only-first-hyperparam':
+			only_first_hyperparam=True
 		elif opt == 'clear-plots-models-and-datasets':
 			Utils.deleteFile('log.txt')
 			print('Clearing contents of: {}'.format(NeuralNetwork.MODELS_PATH))
@@ -439,6 +450,8 @@ echo -e "\n\n\nDONE\n" >> log.txt
 		print('\tmove_models:',move_models)
 		print('\trun_stocks_together:',run_stocks_together)
 		print('\tall_hyper_for_all_stocks:',all_hyper_for_all_stocks)
+		print('\tonly_first_hyperparam:',only_first_hyperparam)
+		print('\tadd_more_fields_to_hyper:',add_more_fields_to_hyper)
 
 	if run_stocks_together:
 		stocks=[stocks]
@@ -448,7 +461,7 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			stocks_to_run=[stock]
 		else:
 			stocks_to_run=stock
-		run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks_to_run,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks)
+		run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks_to_run,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper)
 
 if __name__ == '__main__':
 	delta=-time.time()

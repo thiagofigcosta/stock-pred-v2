@@ -163,10 +163,10 @@ class Utils:
 	@staticmethod
 	def filenameFromPath(path,get_extension=False):
 		if get_extension :
-			re_result=re.search(r'.*\/(.*\..+)', path)
+			re_result=re.search('.*\\'+Utils.FILE_SEPARATOR+r'(.*\..+)', path)
 			return re_result.group(1) if re_result is not None else path
 		else:
-			re_result=re.search(r'.*\/(.*)\..+', path)
+			re_result=re.search('.*\\'+Utils.FILE_SEPARATOR+r'(.*)\..+', path)
 			return re_result.group(1) if re_result is not None else path
 
 	@staticmethod
