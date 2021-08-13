@@ -5,8 +5,18 @@ based on: https://github.com/thiagofigcosta/Stock-Pred-LSTM
 ## Host
 
 ### Install deps linux:
+Install dependencies:
 ```
 pip3 install -r requirements.txt
+```
+
+Install [graphviz]
+```
+sudo yum install graphviz
+```
+or
+```
+sudo apt install graphviz
 ```
 
 ### Install deps windows:
@@ -17,6 +27,7 @@ pip install numpy
 pip install keras
 pip install --user tensorflow
 ```
+Install [graphviz](https://graphviz.gitlab.io/download/).
 
 ## Docker
 
