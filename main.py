@@ -1,6 +1,7 @@
 #!/bin/python3
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import time
 import getopt
@@ -90,6 +91,9 @@ def getPredefHyperparams():
 
 
 def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper):
+	never_crawl=os.getenv('NEVER_CRAWL',default='False')
+	never_crawl=never_crawl.lower() in ['true', '1', 't', 'y', 'yes', 'sim', 'verdade']
+	
 	crawler=Crawler()
 
 	if save_plots:
@@ -116,7 +120,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 		filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
 		filepath=crawler.getDatasetPath(filename)
 		filepaths[stock]=filepath
-		if not Utils.checkIfPathExists(filepath) and download_if_needed:
+		if not Utils.checkIfPathExists(filepath) and download_if_needed and not never_crawl:
 			crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
 			# crawler.downloadStockDataCustomInterval(stock,filename,data_range='max') # just example
 	

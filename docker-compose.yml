@@ -1,0 +1,12 @@
+version: '3.3'
+
+services:
+    stockpred:
+        build: 
+            context: .
+            dockerfile: Dockerfile
+        restart: always
+        environment:
+          NEVER_CRAWL: "true"
+        volumes:
+          - ./datasets:/code/datasets
