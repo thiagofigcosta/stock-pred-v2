@@ -276,3 +276,10 @@ class Utils:
 			moving_averages.append(window_average)
 			i += 1
 		return moving_averages
+
+	@staticmethod
+	def calcDiffUp(input_arr):
+		up = []
+		for i in range(1,len(input_arr)):
+			up.append(1 if input_arr[i]>input_arr[i-1] else 0)
+		return up

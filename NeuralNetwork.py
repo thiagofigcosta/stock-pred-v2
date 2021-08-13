@@ -144,7 +144,12 @@ class NeuralNetwork:
 		for i in reversed(range(len(data_to_eval))):
 			data=data_to_eval[i]
 			to_append=self.data.dataset.reshapeLabelsFromNeuralNetwork(data['predicted'].copy())
-			to_append=self.data.dataset.denormalizeLabelsFromNeuralNetwork(to_append)
+			if self.hyperparameters.binary_classifier:
+				for y,entry in enumerate(to_append):
+					for u,value in enumerate(entry):
+						to_append[y][u]=Hyperparameters.valueToClass(value)
+			else:
+				to_append=self.data.dataset.denormalizeLabelsFromNeuralNetwork(to_append)
 			if full_predicted_values is None:
 				full_predicted_values=to_append
 			else:
@@ -202,6 +207,8 @@ class NeuralNetwork:
 		for i,day_samples in enumerate(pred_values):
 			for j,a_prediction in enumerate(day_samples): 
 				for k,company in enumerate(a_prediction):
+					if self.hyperparameters.binary_classifier:
+						company=Hyperparameters.valueToClass(company)
 					tmp_pred_values[k][j].append(company)
 		pred_values=tmp_pred_values
 
@@ -214,7 +221,10 @@ class NeuralNetwork:
 		metrics={'Model Metrics':model_metrics,'Strategy Metrics':[],'Class Metrics':[]}
 		for i in range(self.hyperparameters.amount_companies):
 			real_value_without_backwards=real_values[i][self.hyperparameters.backwards_samples-1:]
-			swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_value_without_backwards,fl_mean_value_predictions[i])
+			if self.hyperparameters.binary_classifier:
+				swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_value_without_backwards,last_value_predictions[i],binary=True)
+			else:
+				swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_value_without_backwards,fl_mean_value_predictions[i])
 			viniccius13_return=Actuator.autoBuy13(real_value_without_backwards,fl_mean_value_predictions[i])
 			strategy_metrics={}
 			class_metrics={}
@@ -290,27 +300,46 @@ class NeuralNetwork:
 					previous_value=verification_previous_real_value[i]
 					tmp_dates=verification_pred_dates[:len(verification_all_predictions[i][j])]
 					for k,value in enumerate(verification_all_predictions[i][j]):
-						diff=round(verification_all_predictions[i][j][k]-previous_value,2)
-						up=diff>0
-						diff_from_real=round(verification_all_predictions[i][j][k]-verification_real_values[i][k],2)
-						diff_real=round(verification_real_values[i][k]-previous_value,2)
-						up_real=diff_real>0
-						up_ok=up_real==up
-						if print_prediction:
-							print('\t\t{}: pred: {:+.2f} pred_delta: {:+.2f} real: {:+.2f} real_delta: {:+.2f} | pred_up: {} real_up: {} - up: {} | diff_pred-real: {}'.format(tmp_dates[k],round(verification_all_predictions[i][j][k],2),diff,round(verification_real_values[i][k],2),diff_real,up,up_real,up_ok,diff_from_real))
-						previous_value=verification_real_values[i][k]
-						if tmp_dates[k] not in summary:
-							summary[tmp_dates[k]]={'pred_up':0,'real_up':0,'pred_down':0,'real_down':0,'up_ok':0}
-						if up:
-							summary[tmp_dates[k]]['pred_up']+=1
+						if self.hyperparameters.binary_classifier:
+							up=verification_all_predictions[i][j][k]>0
+							up_real=verification_real_values[i][k]>0
+							up_ok=up_real==up
+							if print_prediction:
+								print('\t\t{}: pred_up: {} real_up: {} - up: {} '.format(tmp_dates[k],up,up_real,up_ok))
+							if tmp_dates[k] not in summary:
+								summary[tmp_dates[k]]={'pred_up':0,'real_up':0,'pred_down':0,'real_down':0,'up_ok':0}
+							if up:
+								summary[tmp_dates[k]]['pred_up']+=1
+							else:
+								summary[tmp_dates[k]]['pred_down']+=1
+							if up_real:
+								summary[tmp_dates[k]]['real_up']+=1
+							else:
+								summary[tmp_dates[k]]['real_down']+=1
+							if up_ok:
+								summary[tmp_dates[k]]['up_ok']+=1
 						else:
-							summary[tmp_dates[k]]['pred_down']+=1
-						if up_real:
-							summary[tmp_dates[k]]['real_up']+=1
-						else:
-							summary[tmp_dates[k]]['real_down']+=1
-						if up_ok:
-							summary[tmp_dates[k]]['up_ok']+=1
+							diff=round(verification_all_predictions[i][j][k]-previous_value,2)
+							up=diff>0
+							diff_from_real=round(verification_all_predictions[i][j][k]-verification_real_values[i][k],2)
+							diff_real=round(verification_real_values[i][k]-previous_value,2)
+							up_real=diff_real>0
+							up_ok=up_real==up
+							if print_prediction:
+								print('\t\t{}: pred: {:+.2f} pred_delta: {:+.2f} real: {:+.2f} real_delta: {:+.2f} | pred_up: {} real_up: {} - up: {} | diff_pred-real: {}'.format(tmp_dates[k],round(verification_all_predictions[i][j][k],2),diff,round(verification_real_values[i][k],2),diff_real,up,up_real,up_ok,diff_from_real))
+							previous_value=verification_real_values[i][k]
+							if tmp_dates[k] not in summary:
+								summary[tmp_dates[k]]={'pred_up':0,'real_up':0,'pred_down':0,'real_down':0,'up_ok':0}
+							if up:
+								summary[tmp_dates[k]]['pred_up']+=1
+							else:
+								summary[tmp_dates[k]]['pred_down']+=1
+							if up_real:
+								summary[tmp_dates[k]]['real_up']+=1
+							else:
+								summary[tmp_dates[k]]['real_down']+=1
+							if up_ok:
+								summary[tmp_dates[k]]['up_ok']+=1
 				if print_prediction:
 					Utils.printDict(summary,'Summary - Verify',1)
 				for c,verification_date in enumerate(verification_pred_dates):
@@ -376,16 +405,26 @@ class NeuralNetwork:
 					previous_value=real_values[i][-1]
 					tmp_dates=pred_dates[:len(pred_values[i][j])]
 					for k,value in enumerate(pred_values[i][j]):
-						diff=round(pred_values[i][j][k]-previous_value,2)
-						up=diff>0
-						print('\t\t{}: pred: {:+.2f} delta: {:+.2f} up: {}'.format(tmp_dates[k],round(pred_values[i][j][k],2),diff,up))
-						previous_value=pred_values[i][j][k]
-						if tmp_dates[k] not in summary:
-							summary[tmp_dates[k]]={'up':0,'down':0}
-						if up:
-							summary[tmp_dates[k]]['up']+=1
+						if self.hyperparameters.binary_classifier:
+							up=pred_values[i][j][k]>0
+							print('\t\t{}: up: {}'.format(tmp_dates[k],up))
+							if tmp_dates[k] not in summary:
+								summary[tmp_dates[k]]={'up':0,'down':0}
+							if up:
+								summary[tmp_dates[k]]['up']+=1
+							else:
+								summary[tmp_dates[k]]['down']+=1
 						else:
-							summary[tmp_dates[k]]['down']+=1
+							diff=round(pred_values[i][j][k]-previous_value,2)
+							up=diff>0
+							print('\t\t{}: pred: {:+.2f} delta: {:+.2f} up: {}'.format(tmp_dates[k],round(pred_values[i][j][k],2),diff,up))
+							previous_value=pred_values[i][j][k]
+							if tmp_dates[k] not in summary:
+								summary[tmp_dates[k]]={'up':0,'down':0}
+							if up:
+								summary[tmp_dates[k]]['up']+=1
+							else:
+								summary[tmp_dates[k]]['down']+=1
 				Utils.printDict(summary,'Summary - Future',1)
 
 		# plot future predictions
@@ -462,10 +501,13 @@ class NeuralNetwork:
 				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],input_shape=input_shape, stateful=is_stateful, return_sequences=return_sequences,use_bias=self.hyperparameters.bias[l],activation=self.hyperparameters.activation_functions[l],recurrent_activation=self.hyperparameters.recurrent_activation_functions[l],unit_forget_bias=self.hyperparameters.unit_forget_bias[l],recurrent_dropout=self.hyperparameters.recurrent_dropout_values[l],go_backwards=self.hyperparameters.go_backwards[l],time_major=False))
 			if self.hyperparameters.dropout_values[l]>0:
 				model.add(Dropout(self.hyperparameters.dropout_values[l]))
+		output_activation=Hyperparameters.REGRESSION_OUTPUT_ACTIVATION_FUNCTION  # activation=None = 'linear'
+		if self.hyperparameters.binary_classifier:
+			output_activation=Hyperparameters.BINARY_OUTPUT_ACTIVATION_FUNCTION
 		if self.hyperparameters.use_dense_on_output:
-			model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation='linear')) # activation=None = 'linear'
+			model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation=output_activation))
 		else:
-			model.add(LSTM(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies, activation='linear'))
+			model.add(LSTM(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies, activation=output_activation))
 		if self.verbose:
 			model_summary_lines=[]
 			model.summary(print_fn=lambda x: model_summary_lines.append(x))
@@ -504,7 +546,7 @@ class NeuralNetwork:
 	def enrichDataset(self,paths):
 		if type(paths)!=list:
 			paths=[paths]
-		enriched_column_names=('fast_moving_avg','slow_moving_avg')
+		enriched_column_names=('fast_moving_avg','slow_moving_avg','up')
 		for path in paths:
 			frame=pd.read_csv(path)
 			rows_to_crop=0
@@ -518,6 +560,8 @@ class NeuralNetwork:
 						enriched_column=Utils.calcMovingAverage(stock_column,13)
 					elif enriched_column_name == 'slow_moving_avg':
 						enriched_column=Utils.calcMovingAverage(stock_column,21)
+					elif enriched_column_name == 'up':
+						enriched_column=Utils.calcDiffUp(stock_column)
 					rows_to_crop=max(rows_to_crop,(len(stock_column)-len(enriched_column)))
 					enriched_columns[enriched_column_name]=enriched_column
 			frame = frame.loc[rows_to_crop:]

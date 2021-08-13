@@ -32,9 +32,13 @@ class Actuator:
 		return stock_delta
 
 	@staticmethod
-	def analyzeStrategiesAndClassMetrics(stock_real_array,stock_pred_array):
-		real_stock_delta=Actuator.getStockReturn(stock_real_array)
-		pred_stock_delta=Actuator.getStockReturn(stock_pred_array)
+	def analyzeStrategiesAndClassMetrics(stock_real_array,stock_pred_array,binary=False):
+		if not binary:
+			real_stock_delta=Actuator.getStockReturn(stock_real_array)
+			pred_stock_delta=Actuator.getStockReturn(stock_pred_array)
+		else:
+			real_stock_delta=stock_real_array
+			pred_stock_delta=stock_pred_array
 		
 		real_movement_encoded=[ 1 if r>0 else 0 for r in real_stock_delta]
 		pred_movement_encoded=[ 1 if pred_stock_delta[i]>0 else 0 for i in range(len(real_stock_delta))]

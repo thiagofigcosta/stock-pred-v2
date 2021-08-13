@@ -14,8 +14,42 @@ from Hyperparameters import Hyperparameters
 from Utils import Utils
 
 def getPredefHyperparams():
-	MAX_EPOCHS=10
+	MAX_EPOCHS=100
 	hyperparameters=[]
+
+	ADD_BINARY_CROSSEN_HYPER=True
+	## USING BINARY_CROSSENTROPY
+	binary_classifier=True
+	input_features=['up']
+	output_feature='up'
+	index_feature='Date'
+	backwards_samples=21
+	forward_samples=7
+	lstm_layers=2
+	max_epochs=MAX_EPOCHS
+	patience_epochs=0
+	batch_size=128
+	stateful=False
+	dropout_values=[0.5,0.5]
+	layer_sizes=[50,50]
+	normalize=False
+	optimizer='rmsprop'
+	model_metrics=['accuracy','mean_squared_error']
+	loss='categorical_crossentropy'
+	train_percent=.8
+	val_percent=.2
+	amount_companies=1
+	shuffle=False
+	activation_functions='sigmoid'
+	recurrent_activation_functions='hard_sigmoid'
+	bias=[False,False]
+	use_dense_on_output=True
+	unit_forget_bias=True
+	go_backwards=False
+	recurrent_dropout_values=[0.01,0.01]
+	if ADD_BINARY_CROSSEN_HYPER:
+		hyperparameters.append(Hyperparameters(binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+	## USING BINARY_CROSSENTROPY
 
 	backwards_samples=30
 	forward_samples=7 
