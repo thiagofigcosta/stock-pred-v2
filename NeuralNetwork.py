@@ -117,9 +117,7 @@ class NeuralNetwork:
 		if self.hyperparameters.batch_size > 0:
 			batch_size=self.hyperparameters.batch_size
 		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
-		self.
-		
-		HistoryToVanilla()
+		self.parseHistoryToVanilla()
 		self.statefulModelWorkaround()
 
 	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False, save_plots=False):
@@ -653,15 +651,17 @@ class NeuralNetwork:
 				date_index_array = pd.to_datetime(full_data[i][self.hyperparameters.index_feature])
 				if from_date is not None:
 					from_date_formated=Utils.timestampToStrDateTime(Utils.dateToTimestamp(from_date),date_format='%Y-%m-%d')
-					date_index_array=date_index_array[date_index_array >= from_date_formated]
+					if len(date_index_array[date_index_array >= from_date_formated])>self.hyperparameters.forward_samples+self.hyperparameters.backwards_samples:
+						date_index_array=date_index_array[date_index_array >= from_date_formated]
 				full_data[i][self.hyperparameters.index_feature] = date_index_array
 				full_data[i].set_index(self.hyperparameters.index_feature, inplace=True)
 				dataset_to_load['dates']=[date.strftime('%d/%m/%Y') for date in date_index_array]
 			full_data[i]=full_data[i][fields]
 			if from_date is not None:
-				full_data[i]=full_data[i][pd.to_datetime(from_date,format=Utils.DATE_FORMAT):]
-				d,m,y=Utils.extractNumbersFromDate(from_date)
-				extra_dataset_name='trunc{}{}{}'.format(y,m,d)
+				if pd.to_datetime(from_date,format=Utils.DATE_FORMAT) in full_data[i].index:
+					full_data[i]=full_data[i][pd.to_datetime(from_date,format=Utils.DATE_FORMAT):]
+					d,m,y=Utils.extractNumbersFromDate(from_date)
+					extra_dataset_name='trunc{}{}{}'.format(y,m,d)
 			dataset_to_load['main_feature']=full_data[i][self.hyperparameters.output_feature].to_list()
 			if len(extra_fields)>0:
 				dataset_to_load['other_features']=full_data[i][extra_fields].values.tolist()

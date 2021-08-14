@@ -255,6 +255,8 @@ class Dataset:
 		if self.converted:
 			raise Exception('Already converted')
 		self.converted=not self.converted
+		if self.data is None:
+			return
 		values=self.getValues(no_simplification=True)
 		size=self.getSize()
 		new_size=size-back_samples+1
@@ -402,6 +404,8 @@ class Dataset:
 		# Y (samples, for/backwards, company)
 		if not self.converted:
 			raise Exception('Not converted yet')
+		if self.data is None:
+			return 0,np.array([]),np.array([])
 		normalize=self.setNormalizationMethod(normalization,external_maxes)
 		X=[]
 		Y=[]
@@ -571,7 +575,7 @@ class Dataset:
 					break
 				else:
 					cur=cur.next
-		if first_company:
+		if first_company and self.data is not None:
 			self.data.regenerateIndexes()
 		self.companies+=1
 
@@ -582,12 +586,18 @@ class Dataset:
 		self.data.print()
 
 	def getSize(self,consider_indexes=False):
+		if self.data is None:
+			return 0
 		return self.data.getSize(consider_indexes=consider_indexes)
 
 	def getValues(self,degree=0,only_main_value=False,no_simplification=False):
+		if self.data is None:
+			return []
 		return self.data.getValues(degree=degree,only_main_value=only_main_value,no_simplification=no_simplification)
 
 	def getIndexes(self,degree=0,int_index=False,get_all=False):
+		if self.data is None:
+			return []
 		return self.data.getIndexes(degree=degree,int_index=int_index,get_all=get_all)
 
 	def regenerateIndexes(self):
