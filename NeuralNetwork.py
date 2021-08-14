@@ -93,7 +93,7 @@ class NeuralNetwork:
 		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
 		self.setFilenames()
 		self.model=load_model(self.getModelPath(self.filenames['model']))
-		# self.statefulModelWorkaround()
+		# self.statefulModelWorkaround() # not needed after specify batch_size on fit and predict
 		if self.data is None:
 			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
 		self.history=Utils.loadJson(self.getModelPath(self.filenames['history']))
@@ -114,13 +114,26 @@ class NeuralNetwork:
 		
 	def train(self):
 		batch_size=None
+		train_x=self.data.train_x
+		train_y=self.data.train_y
+		val_x=self.data.val_x
+		val_y=self.data.val_y
 		if self.hyperparameters.batch_size > 0:
 			batch_size=self.hyperparameters.batch_size
-		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
+			if self.hyperparameters.batch_size > 1:
+				new_size_train=int(len(train_x)/batch_size)*batch_size
+				train_x=train_x[:new_size_train]
+				train_y=train_y[:new_size_train]
+				if val_x is not None:
+					new_size_val=int(len(val_x)/batch_size)*batch_size
+					val_x=val_x[:new_size_val]
+					val_y=val_y[:new_size_val]
+		self.history=self.model.fit(train_x,train_y,epochs=self.hyperparameters.max_epochs,validation_data=(val_x,val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
 		self.parseHistoryToVanilla()
-		# self.statefulModelWorkaround()
+		# self.statefulModelWorkaround()  # not needed after specify batch_size on fit and predict
 
 	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False, save_plots=False):
+		self.statefulModelWorkaround() # needed to avoid cropping test data
 		# add data to be evaluated
 		data_to_eval=[]
 		data_to_eval.append({'features':self.data.test_x,'labels':self.data.test_y,'index':self.data.test_start_idx,'name':'test'})		   
@@ -493,7 +506,7 @@ class NeuralNetwork:
 			input_shape=(self.hyperparameters.layer_sizes[l],self.hyperparameters.amount_companies*input_features_size)
 			return_sequences=True if l+1<self.hyperparameters.lstm_layers else not self.hyperparameters.use_dense_on_output
 			batch_input_shape=None
-			if l==0:
+			if l==0 and not force_stateless:
 				batch_size=self.hyperparameters.batch_size
 				if self.hyperparameters.batch_size==0:
 					batch_size=None
