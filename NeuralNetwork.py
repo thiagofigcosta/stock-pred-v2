@@ -12,6 +12,7 @@ import random as rd
 import datetime as dt
 import tensorflow as tf
 from Hyperparameters import Hyperparameters
+from CustomStatefulCallback import CustomStatefulCallback
 from Dataset import Dataset
 from NNDatasetContainer import NNDatasetContainer
 from Utils import Utils
@@ -539,6 +540,9 @@ class NeuralNetwork:
 		checkpoint_filepath=Utils.joinPath(NeuralNetwork.MODELS_PATH,checkpoint_filename)
 		checkpoint=ModelCheckpoint(checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
 		callbacks.append(checkpoint)
+		if self.hyperparameters.stateful:
+			reset_states_after_epoch=CustomStatefulCallback(verbose=self.verbose)
+			callbacks.append(reset_states_after_epoch)
 		return model,callbacks
 
 	def getModelPath(self,filename):
