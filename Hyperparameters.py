@@ -78,7 +78,7 @@ class Hyperparameters:
 			raise Exception('Only input_features or amount_companies must be greater than 1')
 		if self.val_percent>1 or self.train_percent>1 or self.val_percent<0 or self.train_percent<0:
 			raise Exception('Train + validation percent must be smaller than 1 and bigger than 0')
-		if self.stateful:
+		if self.stateful:# and (self.batch_size is None or self.batch_size == 0):
 			self.batch_size=1 # batch size must be one for stateful
 		if len(self.layer_sizes)==self.lstm_layers:
 			self.layer_sizes.insert(0,self.backwards_samples)

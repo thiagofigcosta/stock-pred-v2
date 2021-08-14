@@ -93,7 +93,7 @@ class NeuralNetwork:
 		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
 		self.setFilenames()
 		self.model=load_model(self.getModelPath(self.filenames['model']))
-		self.statefulModelWorkaround()
+		# self.statefulModelWorkaround()
 		if self.data is None:
 			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
 		self.history=Utils.loadJson(self.getModelPath(self.filenames['history']))
@@ -118,7 +118,7 @@ class NeuralNetwork:
 			batch_size=self.hyperparameters.batch_size
 		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
 		self.parseHistoryToVanilla()
-		self.statefulModelWorkaround()
+		# self.statefulModelWorkaround()
 
 	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False, save_plots=False):
 		# add data to be evaluated
@@ -137,7 +137,7 @@ class NeuralNetwork:
 	
 		# predict values
 		for data in data_to_eval:
-			data['predicted']=self.model.predict(data['features'])
+			data['predicted']=self.model.predict(data['features'],batch_size=self.hyperparameters.batch_size)
 
 		# join predictions
 		full_predicted_values=None
@@ -213,7 +213,7 @@ class NeuralNetwork:
 		pred_values=tmp_pred_values
 
 		# compute metrics
-		model_metrics=self.model.evaluate(data_to_eval[-1]['features'][:len(data_to_eval[-1]['labels'])],data_to_eval[-1]['labels'])
+		model_metrics=self.model.evaluate(data_to_eval[-1]['features'][:len(data_to_eval[-1]['labels'])],data_to_eval[-1]['labels'],batch_size=self.hyperparameters.batch_size)
 		aux={}
 		for i in range(len(model_metrics)):
 			aux[self.model.metrics_names[i]] = model_metrics[i]
@@ -493,8 +493,11 @@ class NeuralNetwork:
 			input_shape=(self.hyperparameters.layer_sizes[l],self.hyperparameters.amount_companies*input_features_size)
 			return_sequences=True if l+1<self.hyperparameters.lstm_layers else not self.hyperparameters.use_dense_on_output
 			batch_input_shape=None
-			if is_stateful and l==0:
-				batch_input_shape=tuple([self.hyperparameters.batch_size])+input_shape
+			if l==0:
+				batch_size=self.hyperparameters.batch_size
+				if self.hyperparameters.batch_size==0:
+					batch_size=None
+				batch_input_shape=tuple([batch_size])+input_shape
 			if batch_input_shape is not None:
 				model.add(LSTM(self.hyperparameters.layer_sizes[l+1],batch_input_shape=batch_input_shape, stateful=is_stateful, return_sequences=return_sequences,use_bias=self.hyperparameters.bias[l],activation=self.hyperparameters.activation_functions[l],recurrent_activation=self.hyperparameters.recurrent_activation_functions[l],unit_forget_bias=self.hyperparameters.unit_forget_bias[l],recurrent_dropout=self.hyperparameters.recurrent_dropout_values[l],go_backwards=self.hyperparameters.go_backwards[l],time_major=False))
 			else:
@@ -662,6 +665,8 @@ class NeuralNetwork:
 					full_data[i]=full_data[i][pd.to_datetime(from_date,format=Utils.DATE_FORMAT):]
 					d,m,y=Utils.extractNumbersFromDate(from_date)
 					extra_dataset_name='trunc{}{}{}'.format(y,m,d)
+				else:
+					from_date=None
 			dataset_to_load['main_feature']=full_data[i][self.hyperparameters.output_feature].to_list()
 			if len(extra_fields)>0:
 				dataset_to_load['other_features']=full_data[i][extra_fields].values.tolist()
