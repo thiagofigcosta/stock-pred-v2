@@ -181,7 +181,7 @@ class NeuralNetwork:
 				first_value_predictions[i].append(pred_val[i][0])
 				last_value_predictions[i].append(pred_val[i][-1])
 				mean_value_predictions[i].append(pred_val[i].mean())
-				fl_mean_value_predictions[i].append((pred_val[i][0]+pred_val[i][1])/2.0)
+				fl_mean_value_predictions[i].append((pred_val[i][0]+pred_val[i][-1])/2.0)
 
 		# assign predictions to dataset
 		for data in data_to_eval:
