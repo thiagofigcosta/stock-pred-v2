@@ -117,7 +117,9 @@ class NeuralNetwork:
 		if self.hyperparameters.batch_size > 0:
 			batch_size=self.hyperparameters.batch_size
 		self.history=self.model.fit(self.data.train_x,self.data.train_y,epochs=self.hyperparameters.max_epochs,validation_data=(self.data.val_x,self.data.val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
-		self.parseHistoryToVanilla()
+		self.
+		
+		HistoryToVanilla()
 		self.statefulModelWorkaround()
 
 	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False, save_plots=False):
@@ -531,15 +533,26 @@ class NeuralNetwork:
 			path=Utils.joinPath(NeuralNetwork.MODELS_PATH,filename)
 		return path
 
+	def parseNumpyToVanillaRecursivelly(self,element):
+		if type(element) == np.ndarray:
+			return self.parseNumpyToVanillaRecursivelly(element.tolist())
+		elif type(element) == list:
+			if len(element) == 0:
+				return element
+			elif type(element[0]) in (np.float64,np.float32,np.float):
+				return list(map(float,element))
+			elif type(element[0]) in (np.int64,np.int32,np.int):
+				return list(map(int,element))
+			else:
+				raise Exception('Unhandled type {}'.format(type(element[0])))
+		else:
+			raise Exception('Unhandled type {}'.format(type(element)))
+
+
 	def parseHistoryToVanilla(self):
 		new_hist = {}
 		for key in list(self.history.history.keys()):
-			new_hist[key]=self.history.history[key]
-			if type(self.history.history[key]) == np.ndarray:
-				new_hist[key] = self.history.history[key].tolist()
-			elif type(self.history.history[key]) == list:
-				if  type(self.history.history[key][0]) == np.float64:
-					new_hist[key] = list(map(float, self.history.history[key]))
+			new_hist[key]=self.parseNumpyToVanillaRecursivelly(self.history.history[key])
 		self.history=new_hist
 
 
