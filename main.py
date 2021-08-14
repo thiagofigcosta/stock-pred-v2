@@ -17,7 +17,7 @@ def getPredefHyperparams():
 	MAX_EPOCHS=100
 	hyperparameters=[]
 
-	ADD_BINARY_CROSSEN_HYPER=True
+	ADD_BINARY_CROSSEN_HYPER=False
 	## USING BINARY_CROSSENTROPY
 	binary_classifier=True
 	input_features=['up']
@@ -52,7 +52,7 @@ def getPredefHyperparams():
 	## USING BINARY_CROSSENTROPY
 
 	backwards_samples=30
-	forward_samples=7 
+	forward_samples=7
 	lstm_layers=2
 	layer_sizes=[25,15]
 	max_epochs=MAX_EPOCHS
@@ -124,7 +124,7 @@ def getPredefHyperparams():
 
 
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper):
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper,test_date):
 	never_crawl=os.getenv('NEVER_CRAWL',default='False')
 	never_crawl=never_crawl.lower() in ['true', '1', 't', 'y', 'yes', 'sim', 'verdade']
 	
@@ -145,6 +145,11 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 		end_date='07/05/2021'
 	else:
 		Utils.assertDateFormat(end_date)
+
+	if test_date is None:
+		test_date='10/03/2021'
+	else:
+		Utils.assertDateFormat(test_date)
 
 	start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
 	end_date_formated_for_file=''.join(Utils.extractNumbersFromDate(end_date,reverse=True))
@@ -218,7 +223,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			for hyperparameter in hyperparameters[stock]:
 				neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
 				neuralNetwork.load()
-				neuralNetwork.loadTestDataset(filepaths[stock],from_date='10/03/2021',blocking_plots=blocking_plots,save_plots=save_plots)
+				neuralNetwork.loadTestDataset(filepaths[stock],from_date=test_date,blocking_plots=blocking_plots,save_plots=save_plots)
 				neuralNetwork.eval(plot=(plot or plot_eval),print_prediction=True,blocking_plots=blocking_plots,save_plots=save_plots)
 				neuralNetwork.destroy()
 
@@ -324,7 +329,7 @@ def main(argv):
 					]
 
 	python_exec_name=Utils.getPythonExecName()
-	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]\n\t[--run-all-stocks-together]\n\t[--use-all-hyper-on-all-stocks] *warning: heavy\n\t[--only-first-hyperparam]\n\t[--do-not-test-hyperparams-with-more-fields]'
+	help_str='main.py\n\t[-h | --help]\n\t[-t | --train]\n\t[--force-train]\n\t[-e | --eval]\n\t[-p | --plot]\n\t[--plot-eval]\n\t[--plot-dataset]\n\t[--blocking-plots]\n\t[--save-plots]\n\t[--force-no-plots]\n\t[--do-not-restore-checkpoints]\n\t[--do-not-download]\n\t[--stock <stock-name>]\n\t\t*default: all\n\t[--start-date <dd/MM/yyyy>]\n\t[--end-date <dd/MM/yyyy>]\n\t[--test-date <dd/MM/yyyy>]\n\t[--enrich-dataset]\n\t[--clear-plots-models-and-datasets]\n\t[--analyze-metrics]\n\t[--move-models-to-backup]\n\t[--restore-backups]\n\t[--dummy]\n\t[--run-all-stocks-together]\n\t[--use-all-hyper-on-all-stocks] *warning: heavy\n\t[--only-first-hyperparam]\n\t[--do-not-test-hyperparams-with-more-fields]'
 	help_str+='\n\n\t\t Example for testing datasets: '
 	help_str+=r"""
 {python} main.py --dummy --clear-plots-models-and-datasets \
@@ -360,9 +365,10 @@ echo -e "\n\n\nDONE\n" >> log.txt
 	all_hyper_for_all_stocks=False
 	only_first_hyperparam=False
 	add_more_fields_to_hyper=True
+	test_date=None
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy','run-all-stocks-together','use-all-hyper-on-all-stocks','only-first-hyperparam','do-not-test-hyperparams-with-more-fields'])
+		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','test-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy','run-all-stocks-together','use-all-hyper-on-all-stocks','only-first-hyperparam','do-not-test-hyperparams-with-more-fields'])
 	except getopt.GetoptError:
 		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
@@ -407,6 +413,8 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			start_date=arg.strip()
 		elif opt == 'end-date':
 			end_date=arg.strip()
+		elif opt == 'test-date':
+			test_date=arg.strip()
 		elif opt == 'enrich-dataset':
 			enrich_dataset=True
 		elif opt == 'only-first-hyperparam':
@@ -484,6 +492,7 @@ echo -e "\n\n\nDONE\n" >> log.txt
 		print('\tstocks:',stocks)
 		print('\tstart_date:',start_date)
 		print('\tend_date:',end_date)
+		print('\ttest_date:',test_date)
 		print('\tanalyze_metrics:',analyze_metrics)
 		print('\tmove_models:',move_models)
 		print('\trun_stocks_together:',run_stocks_together)
@@ -499,7 +508,7 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			stocks_to_run=[stock]
 		else:
 			stocks_to_run=stock
-		run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks_to_run,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper)
+		run(train_model,force_train,eval_model,plot and not force_no_plots,plot_eval and not force_no_plots,plot_dataset and not force_no_plots,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks_to_run,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper,test_date)
 
 if __name__ == '__main__':
 	delta=-time.time()
