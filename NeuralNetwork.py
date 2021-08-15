@@ -21,6 +21,7 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers import Dense, Dropout
 from keras.layers import LSTM
 from keras.models import Sequential, load_model
+from keras.optimizers import Adam, SGD, RMSprop
 from keras.utils.vis_utils import plot_model
 from matplotlib import pyplot as plt
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
@@ -530,7 +531,15 @@ class NeuralNetwork:
 			model.summary(print_fn=lambda x: model_summary_lines.append(x))
 			model_summary_str='\n'.join(model_summary_lines)+'\n'
 			print(model_summary_str)
-		model.compile(loss=self.hyperparameters.loss,optimizer=self.hyperparameters.optimizer,metrics=self.hyperparameters.model_metrics)
+		if self.hyperparameters.optimizer=='adam':
+			opt=Adam(clipnorm=1.0)
+		elif self.hyperparameters.optimizer=='sgd':
+			opt=SGD(clipnorm=1.0)
+		elif self.hyperparameters.optimizer=='rmsprop':
+			opt=RMSprop(clipnorm=1.0)
+		else:
+			raise Exception('Unknown optmizer {}'.format(self.hyperparameters.optimizer))
+		model.compile(loss=self.hyperparameters.loss,optimizer=opt,metrics=self.hyperparameters.model_metrics)
 		callbacks=[]
 		if self.hyperparameters.patience_epochs>0:
 			early_stopping=EarlyStopping(monitor='val_loss', mode='min', patience=self.hyperparameters.patience_epochs,verbose=1)
