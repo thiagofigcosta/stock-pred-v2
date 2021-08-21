@@ -95,7 +95,7 @@ class NeuralNetwork:
 		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
 		self.setFilenames()
 		self.model=load_model(self.getModelPath(self.filenames['model']))
-		# self.statefulModelWorkaround() # not needed after specify batch_size on fit and predict
+		self.batchSizeWorkaround() # needed to avoid cropping test data
 		if self.data is None:
 			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
 		self.history=Utils.loadJson(self.getModelPath(self.filenames['history']))
@@ -132,10 +132,9 @@ class NeuralNetwork:
 					val_y=val_y[:new_size_val]
 		self.history=self.model.fit(train_x,train_y,epochs=self.hyperparameters.max_epochs,validation_data=(val_x,val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
 		self.parseHistoryToVanilla()
-		# self.statefulModelWorkaround()  # not needed after specify batch_size on fit and predict
 
 	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False, save_plots=False):
-		self.statefulModelWorkaround() # needed to avoid cropping test data
+		self.batchSizeWorkaround() # needed to avoid cropping test data
 		# add data to be evaluated
 		data_to_eval=[]
 		data_to_eval.append({'features':self.data.test_x,'labels':self.data.test_y,'index':self.data.test_start_idx,'name':'test'})		   
@@ -341,7 +340,7 @@ class NeuralNetwork:
 							up_real=diff_real>0
 							up_ok=up_real==up
 							if print_prediction:
-								print('\t\t{}: pred: {:+.2f} pred_delta: {:+.2f} real: {:+.2f} real_delta: {:+.2f} | pred_up: {} real_up: {} - up: {} | diff_pred-real: {}'.format(tmp_dates[k],round(verification_all_predictions[i][j][k],2),diff,round(verification_real_values[i][k],2),diff_real,up,up_real,up_ok,diff_from_real))
+								print('\t\t{}: pred: {:+.2f} pred_delta: {:+.2f} real: {:+.2f} real_delta: {:+.2f} | pred_up: {} real_up: {} - OK: {} | diff_pred-real: {}'.format(tmp_dates[k],round(verification_all_predictions[i][j][k],2),diff,round(verification_real_values[i][k],2),diff_real,up,up_real,up_ok,diff_from_real))
 							previous_value=verification_real_values[i][k]
 							if tmp_dates[k] not in summary:
 								summary[tmp_dates[k]]={'pred_up':0,'real_up':0,'pred_down':0,'real_down':0,'up_ok':0}
@@ -483,14 +482,13 @@ class NeuralNetwork:
 		return metrics
 		
 
-	def statefulModelWorkaround(self):
-		if self.hyperparameters.stateful: # workaround because model.predict was not working for trained stateful models
-			verbose_bkp=self.verbose
-			self.verbose=False
-			new_model,_=self._buildModel(force_stateless=True)
-			self.verbose=verbose_bkp
-			new_model.set_weights(self.model.get_weights())
-			self.model=new_model
+	def batchSizeWorkaround(self): # replacement for statefulModelWorkaround
+		verbose_bkp=self.verbose
+		self.verbose=False
+		new_model,_=self._buildModel(force_stateless=True)
+		self.verbose=verbose_bkp
+		new_model.set_weights(self.model.get_weights())
+		self.model=new_model
 
 	def buildModel(self,plot_model_to_file=False):
 		self.model,self.callbacks=self._buildModel()
@@ -498,7 +496,7 @@ class NeuralNetwork:
 			filepath=NeuralNetwork.getNextPlotFilepath('model_{}'.format(self.hyperparameters.uuid),append_ids=False)
 			if self.verbose:
 				print('Saving model diagram to file: {}'.format(filepath))
-			plot_model(self.model,to_file=filepath,show_shapes=True,show_dtype=False,show_layer_names=True,rankdir="TB",expand_nested=False,dpi=300)
+			plot_model(self.model,to_file=filepath,show_shapes=True,show_layer_names=True,rankdir="TB",expand_nested=False,dpi=300) # show_dtype=False,
 		
 	def _buildModel(self,force_stateless=False):
 		model=Sequential()
@@ -582,15 +580,15 @@ class NeuralNetwork:
 			new_hist[key]=self.parseNumpyToVanillaRecursivelly(self.history.history[key])
 		self.history=new_hist
 
-
-	def enrichDataset(self,paths):
+	@staticmethod
+	def enrichDataset(paths,base_column_name='Close'):
 		if type(paths)!=list:
 			paths=[paths]
 		enriched_column_names=('fast_moving_avg','slow_moving_avg','up')
 		for path in paths:
 			frame=pd.read_csv(path)
 			rows_to_crop=0
-			stock_column=frame[self.hyperparameters.output_feature].tolist()
+			stock_column=frame[base_column_name].tolist()
 			enriched_columns={}
 			for enriched_column_name in enriched_column_names:
 				if enriched_column_name not in frame.columns:

@@ -28,7 +28,7 @@ def getPredefHyperparams():
 	lstm_layers=2
 	max_epochs=MAX_EPOCHS
 	patience_epochs=0
-	batch_size=128
+	batch_size=8
 	stateful=False
 	dropout_values=[0.5,0.5]
 	layer_sizes=[50,50]
@@ -198,8 +198,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 
 	if enrich_dataset:
 		for stock in stocks:
-			neuralNetwork=NeuralNetwork(hyperparameters[stock][0],stock_name=stock,verbose=True)
-			neuralNetwork.enrichDataset(filepaths[stock])
+			NeuralNetwork.enrichDataset(filepaths[stock])
 	
 	if train_model or force_train:
 		for stock in stocks:
