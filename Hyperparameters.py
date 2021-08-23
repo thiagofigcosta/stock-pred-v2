@@ -11,14 +11,16 @@ class Hyperparameters:
 	REGRESSION_OUTPUT_ACTIVATION_FUNCTION='linear'
 	BINARY_OUTPUT_ACTIVATION_FUNCTION='sigmoid'
 
-	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs=10,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='rmsprop',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True,activation_functions='tanh',recurrent_activation_functions='sigmoid',bias=True,use_dense_on_output=False,unit_forget_bias=True,go_backwards=False,recurrent_dropout_values=0,binary_classifier=False):
+	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs_stop=10,patience_epochs_reduce=10,reduce_factor=.1,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='rmsprop',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True,activation_functions='tanh',recurrent_activation_functions='sigmoid',bias=True,use_dense_on_output=False,unit_forget_bias=True,go_backwards=False,recurrent_dropout_values=0,binary_classifier=False):
 		self.uuid=None
 		self.name=name
 		self.backwards_samples=backwards_samples # [5, 60]
 		self.forward_samples=forward_samples # [5, 14]
 		self.lstm_layers=lstm_layers # [1, 4]
 		self.max_epochs=max_epochs	# [10, 200]
-		self.patience_epochs=patience_epochs # [10, 20]
+		self.patience_epochs_stop=patience_epochs_stop # [10, 20]
+		self.patience_epochs_reduce=patience_epochs_reduce # [10, 20]
+		self.reduce_factor=reduce_factor # [0.0, 0.5]
 		self.batch_size=batch_size # [1, 22]
 		self.stateful=stateful # [False, True] or [0, 1]
 		self.dropout_values=dropout_values # [0.0, 1.0] * lstm_layers
@@ -90,7 +92,9 @@ class Hyperparameters:
 		forward_samples=self.forward_samples
 		lstm_layers=self.lstm_layers
 		max_epochs=self.max_epochs
-		patience_epochs=self.patience_epochs
+		patience_epochs_stop=self.patience_epochs_stop
+		patience_epochs_reduce=self.patience_epochs_reduce
+		reduce_factor=self.reduce_factor
 		batch_size=self.batch_size
 		stateful=self.stateful
 		dropout_values=self.dropout_values.copy()
@@ -114,7 +118,7 @@ class Hyperparameters:
 		go_backwards=self.go_backwards.copy()
 		binary_classifier=self.binary_classifier
 		recurrent_dropout_values=self.recurrent_dropout_values.copy()
-		new_hyperparams=Hyperparameters(name=name,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values,binary_classifier=binary_classifier)
+		new_hyperparams=Hyperparameters(name=name,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values,binary_classifier=binary_classifier)
 		return new_hyperparams
 
 	def toString(self):
@@ -125,7 +129,9 @@ class Hyperparameters:
 		string+='forward_samples: {}'.format(self.forward_samples)+', '
 		string+='lstm_layers: {}'.format(self.lstm_layers)+', '
 		string+='max_epochs: {}'.format(self.max_epochs)+', '
-		string+='patience_epochs: {}'.format(self.patience_epochs)+', '
+		string+='patience_epochs_stop: {}'.format(self.patience_epochs_stop)+', '
+		string+='patience_epochs_reduce: {}'.format(self.patience_epochs_reduce)+', '
+		string+='reduce_factor: {}'.format(self.reduce_factor)+', '
 		string+='batch_size: {}'.format(self.batch_size)+', '
 		string+='stateful: {}'.format(self.stateful)+', '
 		string+='dropout_values: {}'.format(self.dropout_values)+', '
@@ -163,7 +169,7 @@ class Hyperparameters:
 	@staticmethod
 	def jsonDecoder(obj):
 		if '__type__' in obj and obj['__type__'] == 'Hyperparameters':
-			return Hyperparameters(name=obj['name'],input_features=obj['input_features'],output_feature=obj['output_feature'],index_feature=obj['index_feature'],backwards_samples=obj['backwards_samples'],forward_samples=obj['forward_samples'],lstm_layers=obj['lstm_layers'],max_epochs=obj['max_epochs'],patience_epochs=obj['patience_epochs'],batch_size=obj['batch_size'],stateful=obj['stateful'],dropout_values=obj['dropout_values'],layer_sizes=obj['layer_sizes'],normalize=obj['normalize'],optimizer=obj['optimizer'],model_metrics=obj['model_metrics'],loss=obj['loss'],train_percent=obj['train_percent'],val_percent=obj['val_percent'],amount_companies=obj['amount_companies'],shuffle=obj['shuffle'],activation_functions=obj['activation_functions'],recurrent_activation_functions=obj['recurrent_activation_functions'],bias=obj['bias'],use_dense_on_output=obj['use_dense_on_output'],unit_forget_bias=obj['unit_forget_bias'],go_backwards=obj['go_backwards'],recurrent_dropout_values=obj['recurrent_dropout_values'],binary_classifier=obj['binary_classifier'])
+			return Hyperparameters(name=obj['name'],input_features=obj['input_features'],output_feature=obj['output_feature'],index_feature=obj['index_feature'],backwards_samples=obj['backwards_samples'],forward_samples=obj['forward_samples'],lstm_layers=obj['lstm_layers'],max_epochs=obj['max_epochs'],patience_epochs_stop=obj['patience_epochs_stop'],patience_epochs_reduce=obj['patience_epochs_reduce'],reduce_factor=obj['reduce_factor'],batch_size=obj['batch_size'],stateful=obj['stateful'],dropout_values=obj['dropout_values'],layer_sizes=obj['layer_sizes'],normalize=obj['normalize'],optimizer=obj['optimizer'],model_metrics=obj['model_metrics'],loss=obj['loss'],train_percent=obj['train_percent'],val_percent=obj['val_percent'],amount_companies=obj['amount_companies'],shuffle=obj['shuffle'],activation_functions=obj['activation_functions'],recurrent_activation_functions=obj['recurrent_activation_functions'],bias=obj['bias'],use_dense_on_output=obj['use_dense_on_output'],unit_forget_bias=obj['unit_forget_bias'],go_backwards=obj['go_backwards'],recurrent_dropout_values=obj['recurrent_dropout_values'],binary_classifier=obj['binary_classifier'])
 		return obj
 
 	@staticmethod

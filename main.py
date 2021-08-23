@@ -27,7 +27,7 @@ def getPredefHyperparams():
 	forward_samples=7
 	lstm_layers=2
 	max_epochs=MAX_EPOCHS
-	patience_epochs=0
+	patience_epochs_stop=0
 	batch_size=8
 	stateful=False
 	dropout_values=[0.5,0.5]
@@ -48,7 +48,7 @@ def getPredefHyperparams():
 	go_backwards=False
 	recurrent_dropout_values=[0.01,0.01]
 	if ADD_BINARY_CROSSEN_HYPER:
-		hyperparameters.append(Hyperparameters(binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+		hyperparameters.append(Hyperparameters(binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
 	## USING BINARY_CROSSENTROPY
 
 	backwards_samples=30
@@ -56,7 +56,8 @@ def getPredefHyperparams():
 	lstm_layers=2
 	layer_sizes=[25,15]
 	max_epochs=MAX_EPOCHS
-	patience_epochs=0
+	patience_epochs_stop=0
+	patience_epochs_reduce=10
 	batch_size=0
 	stateful=False
 	dropout_values=0
@@ -64,7 +65,7 @@ def getPredefHyperparams():
 	train_percent=.8
 	val_percent=.2
 	shuffle=False
-	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs=patience_epochs,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent,shuffle=shuffle))
+	hyperparameters.append(Hyperparameters(backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_reduce=patience_epochs_reduce,patience_epochs_stop=patience_epochs_stop,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,train_percent=train_percent,val_percent=val_percent,shuffle=shuffle))
 	
 	backwards_samples=20
 	forward_samples=7 

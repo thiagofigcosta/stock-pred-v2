@@ -17,7 +17,7 @@ from Dataset import Dataset
 from NNDatasetContainer import NNDatasetContainer
 from Utils import Utils
 from Actuator import Actuator
-from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from keras.layers import Dense, Dropout
 from keras.layers import LSTM
 from keras.models import Sequential, load_model
@@ -33,6 +33,7 @@ class NeuralNetwork:
 	SAVED_PLOTS_PATH='saved_plots/'
 	SAVED_PLOTS_COUNTER=0
 	SAVED_PLOTS_ID=rd.randint(0, 666666)
+	CLIP_NORM_INSTEAD_OF_VALUE=False
 
 	def __init__(self,hyperparameters=None,hyperparameters_path=None,stock_name='undefined',verbose=False):
 		if hyperparameters is not None and type(hyperparameters)!=Hyperparameters:
@@ -529,19 +530,28 @@ class NeuralNetwork:
 			model.summary(print_fn=lambda x: model_summary_lines.append(x))
 			model_summary_str='\n'.join(model_summary_lines)+'\n'
 			print(model_summary_str)
+		
+		clip_dict={}
+		if NeuralNetwork.CLIP_NORM_INSTEAD_OF_VALUE:
+			clip_dict['clipnorm']=1.0
+		else:
+			clip_dict['clipvalue']=0.5
 		if self.hyperparameters.optimizer=='adam':
-			opt=Adam(clipnorm=1.0)
+			opt=Adam(**clip_dict)
 		elif self.hyperparameters.optimizer=='sgd':
-			opt=SGD(clipnorm=1.0)
+			opt=SGD(**clip_dict)
 		elif self.hyperparameters.optimizer=='rmsprop':
-			opt=RMSprop(clipnorm=1.0)
+			opt=RMSprop(**clip_dict)
 		else:
 			raise Exception('Unknown optmizer {}'.format(self.hyperparameters.optimizer))
 		model.compile(loss=self.hyperparameters.loss,optimizer=opt,metrics=self.hyperparameters.model_metrics)
 		callbacks=[]
-		if self.hyperparameters.patience_epochs>0:
-			early_stopping=EarlyStopping(monitor='val_loss', mode='min', patience=self.hyperparameters.patience_epochs,verbose=1)
+		if self.hyperparameters.patience_epochs_stop>0:
+			early_stopping=EarlyStopping(monitor='val_loss', mode='auto', patience=self.hyperparameters.patience_epochs_stop, verbose=1 if self.verbose else 0)
 			callbacks.append(early_stopping)
+		if self.hyperparameters.patience_epochs_reduce>0:
+			reduce_lr=ReduceLROnPlateau(monitor='val_loss', mode='min', factor=self.hyperparameters.reduce_factor, patience=self.hyperparameters.patience_epochs_reduce,verbose=1 if self.verbose else 0)
+			callbacks.append(reduce_lr)
 		checkpoint_filename=self.basename+'_cp.h5'
 		self.filenames['checkpoint']=checkpoint_filename
 		checkpoint_filepath=Utils.joinPath(NeuralNetwork.MODELS_PATH,checkpoint_filename)
