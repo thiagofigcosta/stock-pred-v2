@@ -9,7 +9,13 @@ import json
 import shutil
 import codecs
 import joblib
+import gzip
+import zlib
+import uuid
+import base64
+import random as rd
 from datetime import datetime
+from numpy.random import Generator, MT19937
 import datetime as dt
 
 class Utils:
@@ -20,9 +26,40 @@ class Utils:
 	DATE_FORMAT='%d/%m/%Y'
 	DATETIME_FORMAT='%d/%m/%Y %H:%M:%S'
 	FIRST_DATE='01/01/1970'
+	RNG=Generator(MT19937(int(time.time()*rd.random())))
 
 	def __init__(self):
 		pass
+
+	@staticmethod
+	def shuffle(list_to_shuffle):
+		list_to_shuffle=list_to_shuffle.copy()
+		Utils.RNG.shuffle(list_to_shuffle)
+		return list_to_shuffle
+
+	@staticmethod
+	def random():
+		return Utils.RNG.random()
+
+	@staticmethod
+	def randomInt(min_inclusive,max_inclusive,size=1):
+		out=Utils.RNG.integers(low=min_inclusive, high=max_inclusive+1, size=size)
+		if size == 1:
+			out=out[0]
+		return out
+
+	@staticmethod
+	def randomFloat(min_value,max_value,size=1):
+		out=[]
+		for _ in range(size):
+			out.append(min_value + (Utils.random() * (max_value - min_value)))
+		if size == 1:
+			out=out[0]
+		return out
+
+	@staticmethod
+	def randomUUID():
+		return uuid.uuid4().hex
 
 	@staticmethod
 	def getPythonVersion(getTuple=False):
@@ -170,6 +207,10 @@ class Utils:
 			return re_result.group(1) if re_result is not None else path
 
 	@staticmethod
+	def copyFile(src_path,dst_path):
+		shutil.copy(src_path, dst_path)
+
+	@staticmethod
 	def saveObj(obj,path):
 		joblib.dump(obj, path)
 
@@ -283,3 +324,120 @@ class Utils:
 		for i in range(1,len(input_arr)):
 			up.append(1 if input_arr[i]>input_arr[i-1] else 0)
 		return up
+
+	@staticmethod
+	def createFolderIfNotExists(path):
+		if not os.path.exists(path):
+			os.makedirs(path)
+
+	@staticmethod
+	def getEnumBorder(enum,max_instead_of_min=False):
+		if max_instead_of_min:
+			return enum(list(enum._member_map_.items())[-1][1]).value
+		else:
+			return enum(list(enum._member_map_.items())[0][1]).value
+
+
+	@staticmethod
+	def objToJsonStr(obj,compress=False,b64=False):
+		if obj is None:
+			return None
+		data=json.dumps(obj,cls=Utils.NumpyJsonEncoder)
+		if compress:
+			compressed=zlib.compress(data.encode('utf-8'))
+			if b64:
+				return base64.b64encode(compressed).decode()
+			else:
+				return compressed.decode('iso-8859-1')
+		else:
+			if b64:
+				return base64.b64encode(data.encode('utf-8')).decode()
+			else:
+				return data 
+
+	@staticmethod
+	def jsonStrToObj(data_str,compress=False,b64=False):
+		if data_str is None:
+			return None
+		if compress:
+			if b64:
+				data_to_load=zlib.decompress(base64.b64decode(data_str.encode('utf-8'))).decode('utf-8')
+			else:
+				data_to_load=zlib.decompress(data_str.encode('iso-8859-1')).decode('utf-8')
+		else:
+			if b64:
+				data_to_load=base64.b64decode(data_str.encode('utf-8')).decode('utf-8')
+			else:
+				data_to_load=data_str
+		if data_to_load is not None:
+			data=json.loads(data_to_load,object_hook=Utils.NumpyJsonEncoder.dec)
+		return data
+	
+	@staticmethod
+	def base64ToBase65(base64,char_65='*'):
+		if base64 is None:
+			return None
+		base65=''
+		mark_char='&'
+		last_char=mark_char
+		min_lenght=4
+		count=1
+		for c in base64+last_char:
+			if (last_char==mark_char):
+				last_char=c
+				count=1
+			else:
+				if (last_char!=c):
+					if (count>min_lenght):
+						base65+='{}{}{}{}'.format(last_char,char_65,count,char_65)
+					else:
+						base65+=last_char*count
+					count=0
+					last_char=c
+				count+=1
+		return base65
+
+	@staticmethod
+	def base65ToBase64(base65,char_65='*'):
+		if base65 is None:
+			return None
+		if char_65 not in base65: # fast
+			return base65
+		base64=''
+		mark_char='&'
+		last_char=mark_char
+		count=None
+		for c in base65:
+			if (c==char_65):
+				if (count==None):
+					count=-1
+				else:
+					base64+=last_char*(count-1)
+					count=None
+			if (count==None):
+				if (c!=char_65):
+					base64+=c
+					last_char=c
+			else:
+				if (c!=char_65):
+					if (count==-1):
+						count=int(c)
+					else:
+						count*=10; 
+						count+=int(c)
+		return base64
+
+	class NumpyJsonEncoder(json.JSONEncoder):
+		def default(self, obj):
+			if isinstance(obj, np.ndarray):
+				data_b64 = base64.b64encode(obj.data).decode()
+				return dict(__ndarray__=data_b64,
+							dtype=str(obj.dtype),
+							shape=obj.shape)
+			return json.JSONEncoder.default(self, obj)
+
+		def dec(dct):
+			if isinstance(dct, dict) and '__ndarray__' in dct:
+				data = base64.b64decode(dct['__ndarray__'].encode())
+				return np.frombuffer(data, dct['dtype']).reshape(dct['shape'])
+			return dct

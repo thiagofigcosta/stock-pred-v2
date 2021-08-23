@@ -85,12 +85,25 @@ class NeuralNetwork:
 		self.filenames['metrics']=self.basename+'_metrics.json'
 		self.filenames['history']=self.basename+'_history.json'
 		self.filenames['scaler']=self.basename+'_scaler.bin'
+		self.filenames['checkpoint']=None
 
 	def checkTrainedModelExists(self):
 		return Utils.checkIfPathExists(self.getModelPath(self.filenames['hyperparameters'])) and Utils.checkIfPathExists(self.getModelPath(self.filenames['model']))
 
 	def destroy(self):
 		keras.backend.clear_session()
+
+	def restoreCheckpointWeights(self,delete_after=True):
+		if self.filenames['checkpoint'] is not None and Utils.checkIfPathExists(self.getModelPath(self.filenames['checkpoint'])):
+			loaded_model=load_model(self.getModelPath(self.filenames['checkpoint']))
+			if self.verbose:
+				print('Restoring model checkpoint...')
+			if self.model is None:
+				self.model=loaded_model
+			else:
+				self.model.set_weights(loaded_model.get_weights())
+			if delete_after:
+				Utils.deleteFile(self.getModelPath(self.filenames['checkpoint']))
 
 	def load(self):
 		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
@@ -543,7 +556,7 @@ class NeuralNetwork:
 		elif self.hyperparameters.optimizer=='rmsprop':
 			opt=RMSprop(**clip_dict)
 		else:
-			raise Exception('Unknown optmizer {}'.format(self.hyperparameters.optimizer))
+			raise Exception('Unknown optimizer {}'.format(self.hyperparameters.optimizer))
 		model.compile(loss=self.hyperparameters.loss,optimizer=opt,metrics=self.hyperparameters.model_metrics)
 		callbacks=[]
 		if self.hyperparameters.patience_epochs_stop>0:
