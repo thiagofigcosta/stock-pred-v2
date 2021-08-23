@@ -6,6 +6,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3' # DISABLE TENSORFLOW WARNING
 import re
 import keras
 import shutil
+import pareto
 import pandas as pd
 import numpy as np
 import random as rd
@@ -111,22 +112,27 @@ class NeuralNetwork:
 		self.model=load_model(self.getModelPath(self.filenames['model']))
 		self.batchSizeWorkaround() # needed to avoid cropping test data
 		if self.data is None:
-			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
+			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize,self.verbose)
 		self.history=Utils.loadJson(self.getModelPath(self.filenames['history']))
 		if Utils.checkIfPathExists(self.getModelPath(self.filenames['metrics'])):
 			self.metrics=Utils.loadJson(self.getModelPath(self.filenames['metrics']))
 
 	def save(self):
 		self.model.save(self.getModelPath(self.filenames['model']))
-		print('Model saved at {};'.format(self.getModelPath(self.filenames['model'])))
+		if self.verbose:
+			print('Model saved at {};'.format(self.getModelPath(self.filenames['model'])))
 		self.hyperparameters.saveJson(self.getModelPath(self.filenames['hyperparameters']))
-		print('Model Hyperparameters saved at {};'.format(self.getModelPath(self.filenames['hyperparameters'])))
+		if self.verbose:
+			print('Model Hyperparameters saved at {};'.format(self.getModelPath(self.filenames['hyperparameters'])))
 		Utils.saveObj(self.data.scaler,self.getModelPath(self.filenames['scaler']))
-		print('Model Scaler saved at {};'.format(self.getModelPath(self.filenames['scaler'])))
+		if self.verbose:
+			print('Model Scaler saved at {};'.format(self.getModelPath(self.filenames['scaler'])))
 		Utils.saveJson(self.history,self.getModelPath(self.filenames['history']))
-		print('Model History saved at {};'.format(self.getModelPath(self.filenames['history'])))
+		if self.verbose:
+			print('Model History saved at {};'.format(self.getModelPath(self.filenames['history'])))
 		Utils.saveJson(self.metrics,self.getModelPath(self.filenames['metrics']))
-		print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
+		if self.verbose:
+			print('Model Metrics saved at {};'.format(self.getModelPath(self.filenames['metrics'])))
 		
 	def train(self):
 		batch_size=None
@@ -144,7 +150,7 @@ class NeuralNetwork:
 					new_size_val=int(len(val_x)/batch_size)*batch_size
 					val_x=val_x[:new_size_val]
 					val_y=val_y[:new_size_val]
-		self.history=self.model.fit(train_x,train_y,epochs=self.hyperparameters.max_epochs,validation_data=(val_x,val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2)
+		self.history=self.model.fit(train_x,train_y,epochs=self.hyperparameters.max_epochs,validation_data=(val_x,val_y),batch_size=batch_size,callbacks=self.callbacks,shuffle=self.hyperparameters.shuffle,verbose=2 if self.verbose else 0)
 		self.parseHistoryToVanilla()
 
 	def eval(self,plot=False,plot_training=False, print_prediction=False, blocking_plots=False, save_plots=False):
@@ -165,7 +171,7 @@ class NeuralNetwork:
 	
 		# predict values
 		for data in data_to_eval:
-			data['predicted']=self.model.predict(data['features'],batch_size=self.hyperparameters.batch_size)
+			data['predicted']=self.model.predict(data['features'],batch_size=self.hyperparameters.batch_size,verbose=1 if self.verbose else 0)
 
 		# join predictions
 		full_predicted_values=None
@@ -241,7 +247,7 @@ class NeuralNetwork:
 		pred_values=tmp_pred_values
 
 		# compute metrics
-		model_metrics=self.model.evaluate(data_to_eval[-1]['features'][:len(data_to_eval[-1]['labels'])],data_to_eval[-1]['labels'],batch_size=self.hyperparameters.batch_size)
+		model_metrics=self.model.evaluate(data_to_eval[-1]['features'][:len(data_to_eval[-1]['labels'])],data_to_eval[-1]['labels'],batch_size=self.hyperparameters.batch_size,verbose=1 if self.verbose else 0)
 		aux={}
 		for i in range(len(model_metrics)):
 			aux[self.model.metrics_names[i]] = model_metrics[i]
@@ -377,7 +383,8 @@ class NeuralNetwork:
 					total_samples+=samples
 					ok_rates[i].append(oks/samples*100.0)
 			total_ok_rate=total_oks/total_samples*100.0
-			print('OK_Rate: {:.2f}%'.format(total_ok_rate))
+			if print_prediction:
+				print('OK_Rate: {:.2f}%'.format(total_ok_rate))
 			metrics['Class Metrics']['OK_Rate']=total_ok_rate
 
 			# plot verification predictions
@@ -492,7 +499,8 @@ class NeuralNetwork:
 			self.metrics=Utils.loadJson(self.getModelPath(self.filenames['metrics']))
 		self.metrics[eval_type_name]=metrics
 		Utils.saveJson(self.metrics,self.getModelPath(self.filenames['metrics']),sort_keys=False)
-		print('Metrics at {} were updated;'.format(self.getModelPath(self.filenames['metrics'])))
+		if self.verbose:
+			print('Metrics at {} were updated;'.format(self.getModelPath(self.filenames['metrics'])))
 		return metrics
 		
 
@@ -568,7 +576,7 @@ class NeuralNetwork:
 		checkpoint_filename=self.basename+'_cp.h5'
 		self.filenames['checkpoint']=checkpoint_filename
 		checkpoint_filepath=Utils.joinPath(NeuralNetwork.MODELS_PATH,checkpoint_filename)
-		checkpoint=ModelCheckpoint(checkpoint_filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+		checkpoint=ModelCheckpoint(checkpoint_filepath, monitor='val_loss', verbose=1 if self.verbose else 0, save_best_only=True, mode='auto')
 		callbacks.append(checkpoint)
 		if self.hyperparameters.stateful:
 			reset_states_after_epoch=CustomStatefulCallback(verbose=self.verbose)
@@ -750,7 +758,7 @@ class NeuralNetwork:
 			scaler=self.data.scaler
 		else:
 			scaler=tuple()
-		self.data=NNDatasetContainer(parsed_dataset,scaler,train_percent,val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize)
+		self.data=NNDatasetContainer(parsed_dataset,scaler,train_percent,val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize,self.verbose)
 		self.data.deployScaler()
 		self.data.generateNNArrays()
 
@@ -817,3 +825,97 @@ class NeuralNetwork:
 				shutil.move(Utils.joinPath(NeuralNetwork.MODELS_PATH,checkpoint_filename),Utils.joinPath(NeuralNetwork.MODELS_PATH,model_filename))
 				if metrics_filename is not None:
 					shutil.move(Utils.joinPath(NeuralNetwork.MODELS_PATH,metrics_filename),Utils.joinPath(NeuralNetwork.MODELS_PATH,metrics_filename.split('_metrics')[0]+'_last_patience_metrics.json'))
+
+	@staticmethod
+	def runPareto(use_ok_instead_of_f1,plot,blocking_plots=False,save_plots=False,label=''):
+		metrics_canditates=Utils.getFolderPathsThatMatchesPattern(NeuralNetwork.MODELS_PATH,r'[a-zA-Z0-9]*_.*metrics\.json')
+		uuids=[]
+		f1s=[]
+		oks=[]
+		mean_squared_errors=[]
+		for metrics_canditate in metrics_canditates:
+			uuid=Utils.extractARegexGroup(Utils.filenameFromPath(metrics_canditate),r'^([a-zA-Z0-9]*)_.*$')
+			metrics=Utils.loadJson(metrics_canditate)
+			if 'test' in metrics:
+				print('Found test metrics on {}'.format(metrics_canditate))
+				uuids.append(uuid)
+				f1s.append(metrics['test']['Class Metrics']['f1_monark'])
+				oks.append(metrics['test']['Class Metrics']['OK_Rate'])
+				mean_squared_errors.append(metrics['test']['Model Metrics']['mean_squared_error'])
+		if len(uuids) > 0:
+			table=[]
+			for i in range(len(uuids)):
+				if use_ok_instead_of_f1:
+					if oks[i]==oks[i] and mean_squared_errors[i]==mean_squared_errors[i]:
+			 			table.append([uuids[i],oks[i],mean_squared_errors[i]])
+				else:
+					if f1s[i]==f1s[i] and mean_squared_errors[i]==mean_squared_errors[i]:
+			 			table.append([uuids[i],f1s[i],mean_squared_errors[i]])
+			default_epsilon=1e-9
+			objectives_size=2 #(f1/ok and mean_squared_error)
+			objectives = list(range(1,objectives_size+1)) # indices of objetives
+			default_epsilons=[default_epsilon]*objectives_size
+			pareto_kwargs={}
+			pareto_kwargs['maximize']=[1] # F1/OK must be maximized 
+			pareto_kwargs['attribution']=True
+			solutions = pareto.eps_sort(table, objectives, default_epsilons,**pareto_kwargs)
+			solution_labels=[]
+			solution_coordinates=[[] for _ in range(objectives_size)]
+			print('Pareto solutions:')
+			for solution in solutions:
+				solution_labels.append(solution[0])
+				for i in range(objectives_size):
+					solution_coordinates[i].append(solution[1+i])
+				print('\t {}: {}'.format(solution[0],solution[1:]))
+
+			if plot:
+				# candidates and solutions
+				if use_ok_instead_of_f1:
+					plt.scatter([-ok for ok in oks],mean_squared_errors,label='Solution candidates',color='blue') # f1/ok is inverted because it is a feature to maximize
+				else:
+					plt.scatter([-f1 for f1 in f1s],mean_squared_errors,label='Solution candidates',color='blue') # f1/ok is inverted because it is a feature to maximize
+				plt.scatter([-el for el in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1/ok is inverted because it is a feature to maximize
+				if use_ok_instead_of_f1:
+					plt.xlabel('ok score')
+				else:
+					plt.xlabel('f1 score')
+				plt.ylabel('mean squared error')
+				plt.legend(loc='best')
+				plt.title('Pareto search space')
+				plt.get_current_fig_manager().canvas.set_window_title('Pareto search space')
+				if save_plots:
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_space_{}'.format(label)))
+					plt.figure()
+				else:
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
+
+				# solutions only
+				plt.scatter([-el for el in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1/ok is inverted because it is a feature to maximize
+				for i in range(len(solution_labels)):
+					label=NeuralNetwork.getUuidLabel(solution_labels[i])
+					plt.annotate(label,xy=(-solution_coordinates[0][i],solution_coordinates[1][i]),ha='center',fontsize=8,xytext=(0,8),textcoords='offset points')
+				y_offset=max(solution_coordinates[1])*0.1
+				plt.ylim([min(solution_coordinates[1])-y_offset, max(solution_coordinates[1])+y_offset])
+				if use_ok_instead_of_f1:
+					plt.xlabel('ok score')
+				else:
+					plt.xlabel('f1 score')
+				plt.ylabel('mean squared error')
+				plt.legend(loc='best')
+				plt.title('Pareto solutions')
+				plt.get_current_fig_manager().canvas.set_window_title('Pareto solutions')
+				if save_plots:
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_solutions_{}'.format(label)))
+					plt.figure()
+				else:
+					if blocking_plots:
+						plt.show()
+					else:
+						plt.show(block=False)
+						plt.figure()
+		else:
+			print('Not enough metrics to optimize')

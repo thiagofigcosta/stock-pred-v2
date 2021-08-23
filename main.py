@@ -5,7 +5,6 @@ import os
 import sys
 import time
 import getopt
-import pareto
 import matplotlib
 from matplotlib import pyplot as plt
 from Crawler import Crawler
@@ -228,81 +227,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 				neuralNetwork.destroy()
 
 	if analyze_metrics:
-		metrics_canditates=Utils.getFolderPathsThatMatchesPattern(NeuralNetwork.MODELS_PATH,r'[a-zA-Z0-9]*_.*metrics\.json')
-		uuids=[]
-		f1s=[]
-		mean_squared_errors=[]
-		for metrics_canditate in metrics_canditates:
-			uuid=Utils.extractARegexGroup(Utils.filenameFromPath(metrics_canditate),r'^([a-zA-Z0-9]*)_.*$')
-			metrics=Utils.loadJson(metrics_canditate)
-			if 'test' in metrics:
-				print('Found test metrics on {}'.format(metrics_canditate))
-				uuids.append(uuid)
-				f1s.append(metrics['test']['Class Metrics']['f1_monark'])
-				mean_squared_errors.append(metrics['test']['Model Metrics']['mean_squared_error'])
-		if len(uuids) > 0:
-			table=[]
-			for i in range(len(uuids)):
-			 	table.append([uuids[i],f1s[i],mean_squared_errors[i]])
-			default_epsilon=1e-9
-			objectives_size=2 #(f1 and mean_squared_error)
-			objectives = list(range(1,objectives_size+1)) # indices of objetives
-			default_epsilons=[default_epsilon]*objectives_size
-			pareto_kwargs={}
-			pareto_kwargs['maximize']=[1] # F1 must be maximized 
-			pareto_kwargs['attribution']=True # F1 must be maximized 
-			solutions = pareto.eps_sort(table, objectives, default_epsilons,**pareto_kwargs)
-			solution_labels=[]
-			solution_coordinates=[[] for _ in range(objectives_size)]
-			print('Pareto solutions:')
-			for solution in solutions:
-				solution_labels.append(solution[0])
-				for i in range(objectives_size):
-					solution_coordinates[i].append(solution[1+i])
-				print('\t {}: {}'.format(solution[0],solution[1:]))
-
-			if plot:
-				# candidates and solutions
-				plt.scatter([-f1 for f1 in f1s],mean_squared_errors,label='Solution candidates',color='blue') # f1 is inverted because it is a feature to maximize
-				plt.scatter([-f1 for f1 in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1 is inverted because it is a feature to maximize
-				plt.xlabel('f1 score')
-				plt.ylabel('mean squared error')
-				plt.legend(loc='best')
-				plt.title('Pareto search space')
-				plt.get_current_fig_manager().canvas.set_window_title('Pareto search space')
-				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_space_{}-{}'.format(start_date_formated_for_file,end_date_formated_for_file)))
-					plt.figure()
-				else:
-					if blocking_plots:
-						plt.show()
-					else:
-						plt.show(block=False)
-						plt.figure()
-
-				# solutions only
-				plt.scatter([-f1 for f1 in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1 is inverted because it is a feature to maximize
-				for i in range(len(solution_labels)):
-					label=NeuralNetwork.getUuidLabel(solution_labels[i])
-					plt.annotate(label,xy=(-solution_coordinates[0][i],solution_coordinates[1][i]),ha='center',fontsize=8,xytext=(0,8),textcoords='offset points')
-				y_offset=max(solution_coordinates[1])*0.1
-				plt.ylim([min(solution_coordinates[1])-y_offset, max(solution_coordinates[1])+y_offset])
-				plt.xlabel('f1 score')
-				plt.ylabel('mean squared error')
-				plt.legend(loc='best')
-				plt.title('Pareto solutions')
-				plt.get_current_fig_manager().canvas.set_window_title('Pareto solutions')
-				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_solutions_{}-{}'.format(start_date_formated_for_file,end_date_formated_for_file)))
-					plt.figure()
-				else:
-					if blocking_plots:
-						plt.show()
-					else:
-						plt.show(block=False)
-						plt.figure()
-		else:
-			print('Not enough metrics to optimize')
+		NeuralNetwork.runPareto(use_ok_instead_of_f1=True,plot=plot,blocking_plots=blocking_plots,save_plots=save_plots,label='{}-{}'.format(start_date_formated_for_file,end_date_formated_for_file))
 
 	if move_models:
 		print('Backing up models...',end='')

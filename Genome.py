@@ -253,7 +253,7 @@ class Genome(object):
 		enriched_search_space.add(patience_epochs_reduce.min_value,patience_epochs_reduce.max_value,patience_epochs_reduce.data_type,patience_epochs_reduce.name)
 		enriched_search_space.add(reduce_factor.min_value,reduce_factor.max_value,reduce_factor.data_type,reduce_factor.name)
 		enriched_search_space.add(normalize.min_value,normalize.max_value,normalize.data_type,normalize.name)
-		enriched_search_space.add(optimizer	.min_value,optimizer	.max_value,optimizer	.data_type,optimizer	.name)
+		enriched_search_space.add(optimizer.min_value,optimizer.max_value,optimizer.data_type,optimizer.name)
 		enriched_search_space.add(shuffle.min_value,shuffle.max_value,shuffle.data_type,shuffle.name)
 		
 		enriched_search_space.add(lstm_layers.min_value,lstm_layers.max_value,lstm_layers.data_type,lstm_layers.name)
@@ -287,21 +287,21 @@ class Genome(object):
 		if isinstance(loss,Loss):
 			loss=loss.toKerasName()
 
-		backwards_samples=self.dna[0]
-		forward_samples=self.dna[1]
-		max_epochs=self.dna[2]
-		stateful=self.dna[3]
-		batch_size=self.dna[4]
-		use_dense_on_output=self.dna[5]
+		backwards_samples=int(self.dna[0])
+		forward_samples=int(self.dna[1])
+		max_epochs=int(self.dna[2])
+		stateful=bool(self.dna[3])
+		batch_size=int(self.dna[4])
+		use_dense_on_output=bool(self.dna[5])
 
-		patience_epochs_stop=self.dna[6]
-		patience_epochs_reduce=self.dna[7]
-		reduce_factor=self.dna[8]
-		normalize=self.dna[9]
+		patience_epochs_stop=int(self.dna[6])
+		patience_epochs_reduce=int(self.dna[7])
+		reduce_factor=float(self.dna[8])
+		normalize=bool(self.dna[9])
 		optimizer=Optimizers(self.dna[10]).toKerasName()
-		shuffle=self.dna[11]
+		shuffle=bool(self.dna[11])
 
-		lstm_layers=self.dna[12]
+		lstm_layers=int(self.dna[12])
 		first_layer_dependent=13
 		layer_sizes=[]
 		activation_funcs=[]
@@ -313,14 +313,14 @@ class Genome(object):
 		go_backwards=[]
 		amount_of_dependent=8
 		for l in range(lstm_layers):
-			layer_sizes.append(self.dna[(first_layer_dependent+0)+amount_of_dependent*l])
+			layer_sizes.append(int(self.dna[(first_layer_dependent+0)+amount_of_dependent*l]))
 			activation_funcs.append(NodeType(self.dna[(first_layer_dependent+1)+amount_of_dependent*l]).toKerasName())
 			recurrent_activation_funcs.append(NodeType(self.dna[(first_layer_dependent+2)+amount_of_dependent*l]).toKerasName())
-			dropouts.append(self.dna[(first_layer_dependent+3)+amount_of_dependent*l])
-			recurrent_dropouts.append(self.dna[(first_layer_dependent+4)+amount_of_dependent*l])
-			bias.append(self.dna[(first_layer_dependent+5)+amount_of_dependent*l])
-			unit_forget_bias.append(self.dna[(first_layer_dependent+6)+amount_of_dependent*l])
-			go_backwards.append(self.dna[(first_layer_dependent+7)+amount_of_dependent*l])
+			dropouts.append(float(self.dna[(first_layer_dependent+3)+amount_of_dependent*l]))
+			recurrent_dropouts.append(float(self.dna[(first_layer_dependent+4)+amount_of_dependent*l]))
+			bias.append(bool(self.dna[(first_layer_dependent+5)+amount_of_dependent*l]))
+			unit_forget_bias.append(bool(self.dna[(first_layer_dependent+6)+amount_of_dependent*l]))
+			go_backwards.append(bool(self.dna[(first_layer_dependent+7)+amount_of_dependent*l]))
 		
-		hyperparameters=Hyperparameters(name=self.id,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropouts,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer	,model_metrics=metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_funcs,recurrent_activation_functions=recurrent_activation_funcs,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropouts,binary_classifier=binary_classifier)
+		hyperparameters=Hyperparameters(name=self.id,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropouts,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_funcs,recurrent_activation_functions=recurrent_activation_funcs,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropouts,binary_classifier=binary_classifier)
 		return hyperparameters

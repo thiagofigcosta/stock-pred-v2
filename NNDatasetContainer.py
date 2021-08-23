@@ -44,10 +44,11 @@ class NNDatasetContainer:
 			self.train_start_idx=None
 			self.val_start_idx=None
 			self.test_start_idx=start_index
-			print()
-			print('test_x',self.test_x.shape)
-			print('test_y',self.test_y.shape)
-			print()
+			if self.verbose:
+				print()
+				print('test_x',self.test_x.shape)
+				print('test_y',self.test_y.shape)
+				print()
 		else:
 			test_index,train_x,test_x=Dataset.splitNeuralNetworkArray(dataset_x,self.train_percent)
 			_,train_y,test_y=Dataset.splitNeuralNetworkArray(dataset_y,part2_index=test_index)
@@ -62,16 +63,17 @@ class NNDatasetContainer:
 			self.train_start_idx=start_index
 			self.val_start_idx=start_index+val_index
 			self.test_start_idx=start_index+test_index
-			print()
-			print('train_x',self.train_x.shape)
-			print('train_y',self.train_y.shape)
-			print()
-			print('val_x',self.val_x.shape)
-			print('val_y',self.val_y.shape)
-			print()
-			print('test_x',self.test_x.shape)
-			print('test_y',self.test_y.shape)
-			print()
+			if self.verbose:
+				print()
+				print('train_x',self.train_x.shape)
+				print('train_y',self.train_y.shape)
+				print()
+				print('val_x',self.val_x.shape)
+				print('val_y',self.val_y.shape)
+				print()
+				print('test_x',self.test_x.shape)
+				print('test_y',self.test_y.shape)
+				print()
 
 	def getValuesSplittedByFeature(self):
 		norm_method,norm_param=self.getNormalizationMethod()
@@ -79,7 +81,7 @@ class NNDatasetContainer:
 		return self.dataset.getValuesSplittedByFeature(normalize=normalize)
 		
 
-	def __init__(self,dataset,scaler,train_percent,val_percent,back_samples,forward_samples,normalize):
+	def __init__(self,dataset,scaler,train_percent,val_percent,back_samples,forward_samples,normalize,verbose):
 		self.dataset=dataset
 		self.scaler=scaler
 		self.train_percent=train_percent
@@ -96,3 +98,4 @@ class NNDatasetContainer:
 		self.train_start_idx=None
 		self.val_start_idx=None
 		self.test_start_idx=None
+		self.verbose=verbose

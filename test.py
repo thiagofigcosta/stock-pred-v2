@@ -232,6 +232,7 @@ def dataset_test():
 
 def network_architecture_search_genetic_test():
 	binary_classifier=False
+	use_ok_instead_of_f1=True
 	Genome.CACHE_WEIGHTS=False
 	search_maximum=True
 
@@ -263,24 +264,24 @@ def network_architecture_search_genetic_test():
 	train_percent=.8
 	val_percent=.3
 	if binary_classifier:
-		input_features=[Features.CLOSE]
-		output_feature=Features.CLOSE
-		index_feature='Date'
-		model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
-		loss='mean_squared_error'
-	else:
 		input_features=[Features.UP]
 		output_feature=Features.UP
 		index_feature='Date'
 		model_metrics=['accuracy','mean_squared_error']
 		loss='categorical_crossentropy'
+	else:
+		input_features=[Features.CLOSE]
+		output_feature=Features.CLOSE
+		index_feature='Date'
+		model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		loss='mean_squared_error'
 
 
 
 	stock='T'
 	start_date=Utils.FIRST_DATE
 	end_date='07/05/2021'
-	test_date='10/03/2021'
+	test_date='07/02/2021'
 	start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
 	end_date_formated_for_file=''.join(Utils.extractNumbersFromDate(end_date,reverse=True))
 	filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
@@ -292,7 +293,7 @@ def network_architecture_search_genetic_test():
 		
 
 	def train_callback(genome):
-		nonlocal stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier
+		nonlocal stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,use_ok_instead_of_f1
 		preserve_weights=False # TODO not implemented yet!
 		hyperparameters=genome.toHyperparameters(input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier)
 		neuralNetwork=NeuralNetwork(hyperparameters,stock_name=stock,verbose=False)
@@ -300,16 +301,20 @@ def network_architecture_search_genetic_test():
 		neuralNetwork.buildModel(plot_model_to_file=True)
 		neuralNetwork.train()
 		neuralNetwork.restoreCheckpointWeights(delete_after=False)
+		neuralNetwork.save()
 		neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
 		neuralNetwork.eval(plot=True,print_prediction=False,blocking_plots=False,save_plots=True)
-		output=neuralNetwork.metrics['test']['Class Metrics']['OK_Rate']
+		if use_ok_instead_of_f1:
+			output=neuralNetwork.metrics['test']['Class Metrics']['OK_Rate']
+		else:
+			output=neuralNetwork.metrics['test']['Class Metrics']['f1_monark']
 		neuralNetwork.destroy()
 		return output
 
 	verbose_natural_selection=True
 	verbose_population_details=True
-	population_start_size_enh=10
-	max_gens=10
+	population_start_size_enh=1
+	max_gens=1
 	max_age=2
 	max_children=3
 	mutation_rate=0.1
@@ -323,12 +328,12 @@ def network_architecture_search_genetic_test():
 	enh_population.naturalSelection(max_gens,verbose_natural_selection,verbose_population_details)
 	
 	for individual in enh_elite.notables:
-		 print(str(individual))
+		print(str(individual))
 	Utils.printDict(enh_elite.best,'Elite')
 	print('Evaluating best')
 
 	def test_callback(genome):
-		nonlocal stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier
+		nonlocal stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,start_date_formated_for_file,end_date_formated_for_file
 		hyperparameters=genome.toHyperparameters(input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier)
 		neuralNetwork=NeuralNetwork(hyperparameters,stock_name=stock,verbose=True)
 		neuralNetwork.load()
@@ -336,6 +341,7 @@ def network_architecture_search_genetic_test():
 		neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
 		neuralNetwork.eval(plot=True,print_prediction=True,blocking_plots=False,save_plots=True)
 		neuralNetwork.destroy()
+		NeuralNetwork.runPareto(use_ok_instead_of_f1=True,plot=True,blocking_plots=False,save_plots=True,label='{}-{}'.format(start_date_formated_for_file,end_date_formated_for_file))
 
 	test_callback(enh_elite.getBestGenome())
 
