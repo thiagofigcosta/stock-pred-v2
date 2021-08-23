@@ -279,7 +279,7 @@ def network_architecture_search_genetic_test():
 
 
 	stock='T'
-	start_date=Utils.FIRST_DATE
+	start_date='01/01/2016' #Utils.FIRST_DATE
 	end_date='07/05/2021'
 	test_date='07/02/2021'
 	start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
