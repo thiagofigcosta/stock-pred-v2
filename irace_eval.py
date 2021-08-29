@@ -86,6 +86,8 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 	else:
 		output=neuralNetwork.metrics['test']['Class Metrics']['f1_monark']*100
 	neuralNetwork.destroy()
+
+	output*=-1 # irace minimizes results
 	
 	with open(datfile, 'w') as f:
 		f.write(str(output))
