@@ -12,7 +12,7 @@ if [[ "$RUN_DEFAULT_EXP" = [tT][rR][uU][eE] ]]; then
     echo -e "\n\n\nDONE\n" >> log.txt
 
 else if [[ "$RUN_IRACE" = [tT][rR][uU][eE] ]]; then
-    (cd /code/irace ; /usr/local/lib/R/site-library/irace)
+    (cd /code/irace ; /usr/local/lib/R/site-library/irace/bin/irace)
 fi
 
 
