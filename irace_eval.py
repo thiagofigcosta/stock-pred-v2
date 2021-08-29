@@ -92,7 +92,8 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 
 	
 if __name__ == '__main__':
-	os.chdir('..')
+	if os.getcwd().endswith('irace') or os.getcwd().endswith('irace/'):
+		os.chdir('..')
 	stock_name='T'
 	binary_classifier=False
 	use_ok_instead_of_f1=True
