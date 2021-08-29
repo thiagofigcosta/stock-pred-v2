@@ -1,0 +1,80 @@
+## Template for parameter description file for Iterated Race.
+##
+## The format is one parameter per line. Each line contains:
+##
+## 1: Name of the parameter. An unquoted alphanumeric string,
+##    example: ants
+
+## 2: Switch to pass the parameter. A quoted (possibly empty) string, 
+##    if the value and the switch must be separated, add a space at
+##    the end of the string. Example : "--version1 --ants "
+
+## 3: Type. An unquoted single letter, among 
+##     i: Integer, c: categorical, o: ordinal, r: real.
+
+## 4: For c and o: All possible values, that is, a variable number of
+##    quoted or unquoted strings separated by commas within
+##    parenthesis. Empty strings and strings containing commas or
+##    spaces must be quoted.
+##    For i,r: a pair of unquoted numbers representing minimum and
+##    maximum values. 
+
+## 5: A conditional parameter can be defined according to the values of
+##    one or several other parameters.  This is done by adding a
+##    character '|' followed by an R expression involving the names of
+##    other parameters. This expression must return TRUE if the 
+##    condition is satisfied, FALSE otherwise.
+
+# 1:                    2:          3: 4:                5:
+backwardsSamples        "--bs="     i  (5, 60)
+forwardSamples          "--fs="     i  (1, 14)
+maxEpochs               "--me="     i  (1000, 5000)
+stateful                "--st="     c  ("True", "False")
+batchSize               "--bs="     i  (0, 128)
+useDenseOnOutput        "--do="     c  ("True", "False")
+patienceEpochsStop      "--pes="    i  (1000, 5000)
+patienceEpochsReduce    "--per="    i  (0, 1000)
+reduceFactor            "--rf="     r  (0.0, 0.2)
+optimizer               "--op="     i  (0, 2)
+shuffle                 "--sh="     c  ("False")
+lstmLayers              "--lrs="    i  (1, 5)
+layerSizes0             "--ls-0="   i  (10, 200)
+layerSizes1             "--ls-1="   i  (10, 200)
+layerSizes2             "--ls-2="   i  (10, 200)
+layerSizes3             "--ls-3="   i  (10, 200)
+layerSizes4             "--ls-4="   i  (10, 200)
+activationFuncs0        "--af-0="   i  (0, 2)
+activationFuncs1        "--af-1="   i  (0, 2)
+activationFuncs2        "--af-2="   i  (0, 2)
+activationFuncs3        "--af-3="   i  (0, 2)
+activationFuncs4        "--af-4="   i  (0, 2)
+rActivationFuncs0       "--raf-0="  i  (0, 3)
+rActivationFuncs1       "--raf-1="  i  (0, 3)
+rActivationFuncs2       "--raf-2="  i  (0, 3)
+rActivationFuncs3       "--raf-3="  i  (0, 3)
+rActivationFuncs4       "--raf-4="  i  (0, 3)
+dropouts0               "--dr-0="   r  (0.0, 0.5)
+dropouts1               "--dr-1="   r  (0.0, 0.5)
+dropouts2               "--dr-2="   r  (0.0, 0.5)
+dropouts3               "--dr-3="   r  (0.0, 0.5)
+dropouts4               "--dr-4="   r  (0.0, 0.5)
+recurrentDropouts0      "--rdr-0="  r  (0.0, 0.5)
+recurrentDropouts1      "--rdr-1="  r  (0.0, 0.5)
+recurrentDropouts2      "--rdr-2="  r  (0.0, 0.5)
+recurrentDropouts3      "--rdr-3="  r  (0.0, 0.5)
+recurrentDropouts4      "--rdr-4="  r  (0.0, 0.5)
+bias0                   "--bi-0="  c  ("True", "False")
+bias1                   "--bi-1="  c  ("True", "False")
+bias2                   "--bi-2="  c  ("True", "False")
+bias3                   "--bi-3="  c  ("True", "False")
+bias4                   "--bi-4="  c  ("True", "False")
+unitForgetBias0         "--ufb-0=" c  ("True", "False")
+unitForgetBias1         "--ufb-1=" c  ("True", "False")
+unitForgetBias2         "--ufb-2=" c  ("True", "False")
+unitForgetBias3         "--ufb-3=" c  ("True", "False")
+unitForgetBias4         "--ufb-4=" c  ("True", "False")
+goBackwards0            "--gb-0="  c  ("True", "False")
+goBackwards1            "--gb-1="  c  ("True", "False")
+goBackwards2            "--gb-2="  c  ("True", "False")
+goBackwards3            "--gb-3="  c  ("True", "False")
+goBackwards4            "--gb-4="  c  ("True", "False")

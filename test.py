@@ -1,6 +1,7 @@
 #!/bin/python3
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import time
 import numpy as np
@@ -236,7 +237,9 @@ def network_architecture_search_genetic_test():
 	Genome.CACHE_WEIGHTS=False
 	search_maximum=True
 
-	metric=Metric.RAW_LOSS
+	never_crawl=os.getenv('NEVER_CRAWL',default='False')
+	never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+
 	search_space=SearchSpace()
 	search_space.add(5,60,SearchSpace.Type.INT,'backwards_samples')
 	search_space.add(1,14,SearchSpace.Type.INT,'forward_samples')
@@ -287,7 +290,7 @@ def network_architecture_search_genetic_test():
 	filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
 	crawler=Crawler()
 	filepath=crawler.getDatasetPath(filename)
-	if not Utils.checkIfPathExists(filepath):
+	if not Utils.checkIfPathExists(filepath) and not never_crawl:
 		crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
 		NeuralNetwork.enrichDataset(filepath)
 		

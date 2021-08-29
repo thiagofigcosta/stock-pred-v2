@@ -8,11 +8,15 @@ FROM python:3.8-slim
 WORKDIR /code
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends graphviz
+  && apt-get install -y --no-install-recommends graphviz r-base
 
+# install irace under /usr/local/lib/R/site-library/irace
+RUN echo "install.packages('irace', repos='http://cran.us.r-project.org')" | R --no-save
+  
 COPY --from=builder /root/.local /root/.local
 COPY entrypoint.sh .
 COPY ./*.py ./
+COPY ./irace ./
 
 RUN chmod +x entrypoint.sh
 
