@@ -13,6 +13,7 @@ exp.tar.gz
 neural_genome_cache/
 irace/*.log
 irace/*.dat
+irace/*.Rdata
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

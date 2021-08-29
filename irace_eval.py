@@ -1,14 +1,16 @@
 #!/bin/python3
 # -*- coding: utf-8 -*-
 import os
+import re
 import sys
 import argparse
 from Utils import Utils
 from Crawler import Crawler
+from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
 from Enums import NodeType,Loss,Metric,Optimizers,Features
 	
-def main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
+def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
 	if type(input_features) is not list:
 		input_features=[input_features]
 	for i in range(len(input_features)):
@@ -40,7 +42,7 @@ def main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_cl
 	patience_epochs_stop=int(patience_epochs_stop)
 	patience_epochs_reduce=int(patience_epochs_reduce)
 	reduce_factor=float(reduce_factor)
-	normalize=normalize.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+	normalize=bool(normalize)
 	optimizer=Optimizers(optimizer).toKerasName()
 	shuffle=shuffle.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 
@@ -90,6 +92,7 @@ def main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_cl
 
 	
 if __name__ == '__main__':
+	os.chdir('..')
 	stock_name='T'
 	binary_classifier=False
 	use_ok_instead_of_f1=True
@@ -104,13 +107,13 @@ if __name__ == '__main__':
 		input_features=[Features.UP]
 		output_feature=Features.UP
 		index_feature='Date'
-		model_metrics=['accuracy','mean_squared_error']
+		metrics=['accuracy','mean_squared_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]
 		output_feature=Features.CLOSE
 		index_feature='Date'
-		model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
 		loss='mean_squared_error'
 
 	ap = argparse.ArgumentParser()
@@ -128,11 +131,11 @@ if __name__ == '__main__':
 	ap.add_argument('--sh', dest='sh', type=str, required=True, help='shuffle')
 	ap.add_argument('--lrs', dest='lrs', type=int, required=True, help='lstm_layers')
 	ap.add_argument('--datfile', dest='datfile', type=str, required=True, help='File where it will be save the score (result)')
-	ap.add_argument('--config-id', dest='confid', type=str, required=True, help='config_id')
+	ap.add_argument('--config-id', dest='confid', type=str, required=False, help='config_id')
 
-	args=ap.parse_known_args()
+	pre_parsed_args,remaining_args=ap.parse_known_args()
 
-	lstm_layers=args.lrs
+	lstm_layers=pre_parsed_args.lrs
 
 	layer_sizes=[]
 	activation_funcs=[]
@@ -152,7 +155,12 @@ if __name__ == '__main__':
 		ap.add_argument('--ufb-{}'.format(l), dest='ufb-{}'.format(l), type=str, required=True, help='unit_forget_bias[{}]'.format(l))
 		ap.add_argument('--gb-{}'.format(l), dest='gb-{}'.format(l), type=str, required=True, help='go_backwards[{}]'.format(l))
 
-	args=ap.parse_args()
+	args,remaining_args=ap.parse_known_args() # parse_args raises error when lstm_layers has not the maximum value
+	allowed_args=re.compile(r'^--(ls|af|raf|dr|rdr|bi|ufb|gb)-[0-9]+=(True|False|[0-9.]*)$')
+	for arg in remaining_args:
+		if not allowed_args.match(arg):
+			raise Exception('Invalid arg ({})'.format(arg))
+
 	args_dict=vars(args)
 
 	for l in range(lstm_layers):
@@ -165,5 +173,5 @@ if __name__ == '__main__':
 		unit_forget_bias.append(args_dict['ufb-{}'.format(l)])
 		go_backwards.append(args_dict['gb-{}'.format(l)])
 
-	main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bts,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile,args.confid)
+	main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bts,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile,args.confid)
 	

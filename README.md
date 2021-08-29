@@ -10,13 +10,43 @@ Install dependencies:
 pip3 install -r requirements.txt
 ```
 
-Install [graphviz]
+Install graphviz
 ```
 sudo yum install graphviz
 ```
 or
 ```
 sudo apt install graphviz
+```
+or
+```
+sudo zypper install graphviz
+```
+
+
+Install irace
+```
+sudo yum install r-base
+```
+or
+```
+sudo apt install r-base
+```
+or
+```
+sudo zypper install R-base
+```
+
+then
+```
+echo "install.packages('irace', repos='http://cran.us.r-project.org')" | R --no-save
+```
+
+### Run irace
+
+```
+cd irace
+irace
 ```
 
 ### Install deps windows:
