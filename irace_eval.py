@@ -89,7 +89,7 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 
 	output*=-1 # irace minimizes results
 	
-	with open(datfile, 'w') as f:
+	with open(Utils.joinPath('irace',datfile), 'w') as f:
 		f.write(str(output))
 
 	
