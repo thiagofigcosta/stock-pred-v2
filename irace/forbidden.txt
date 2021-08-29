@@ -9,6 +9,6 @@
 ## then the configuration is discarded.
 ##
 ## Examples of valid logical operators are: ==  !=  >=  <=  >  <  &  |  !  %in%
-patience_epochs_stop > max_epochs
-patience_epochs_reduce > max_epochs
-batch_size%%2 != 0
+patienceEpochsStop > maxEpochs
+patienceEpochsReduce > maxEpochs
+batchSize%%2 != 0

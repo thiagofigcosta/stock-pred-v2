@@ -45,7 +45,7 @@ touch %DAT_FILE%
 :: 
 :: Otherwise, save the output to a file, and parse the result from it.
 
-python %exe% %candidate_parameters% --datfile %DAT_FILE% > %LOGS% 2>&1
+python %exe% %candidate_parameters% --datfile %DAT_FILE% --config-id %candidate% > %LOGS% 2>&1
 :: -i %instance% --seed %seed% %candidate_parameters% 1>%stdout% 2>%stderr%
 
 :: This is an example of reading a number from the output.

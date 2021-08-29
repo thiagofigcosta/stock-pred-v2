@@ -133,7 +133,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 		plt.show()
 
 	
-def main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile):
+def main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
 	if type(input_features) is not list:
 		input_features=[input_features]
 	for i in range(len(input_features)):
@@ -150,8 +150,10 @@ def main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_cl
 			metrics[i]=metrics[i].toKerasName()
 	if isinstance(loss,Loss):
 		loss=loss.toKerasName()
-
-	hyper_id=Utils.randomUUID()
+	if confid is None:
+		hyper_id=Utils.randomUUID()
+	else:
+		hyper_id=confid
 
 	backwards_samples=int(backwards_samples)
 	forward_samples=int(forward_samples)
@@ -213,6 +215,8 @@ def main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_cl
 
 	
 if __name__ == '__main__':
+	with open('args.txt', 'w') as f:
+		f.write(str(sys.argv))
 	stock_name='T'
 	binary_classifier=False
 	use_ok_instead_of_f1=True
@@ -251,6 +255,7 @@ if __name__ == '__main__':
 	ap.add_argument('--sh', dest='sh', type=str, required=True, help='shuffle')
 	ap.add_argument('--lrs', dest='lrs', type=int, required=True, help='lstm_layers')
 	ap.add_argument('--datfile', dest='datfile', type=str, required=True, help='File where it will be save the score (result)')
+	ap.add_argument('--config-id', dest='confid', type=str, required=True, help='config_id')
 
 	args=parser.parse_known_args()
 
@@ -287,5 +292,5 @@ if __name__ == '__main__':
 		unit_forget_bias.append(args_dict['ufb-{}'.format(l)])
 		go_backwards.append(args_dict['gb-{}'.format(l)])
 
-	main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bs,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile)
+	main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bs,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile,args.confid)
 	

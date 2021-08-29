@@ -31,8 +31,6 @@ LOGS=c${CONFIG_ID}-${INSTANCE_ID}.log
 DAT_FILE=c${CONFIG_ID}-${INSTANCE_ID}.dat
 touch ${DAT_FILE}
 
-echo "INSTANCE_ID: $INSTANCE_ID"
-
 # If the program just prints a number, we can use 'exec' to avoid
 # creating another process, but there can be no other commands after exec.
 #exec $EXE ${FIXED_PARAMS} -i $INSTANCE ${CONFIG_PARAMS}
@@ -44,7 +42,7 @@ echo "INSTANCE_ID: $INSTANCE_ID"
 #python -m scoop $EXE -v ${CONFIG_PARAMS} --datfile ${DAT_FILE} > ${LOGS} 2>&1
 #echo $EXE $*
 #python $EXE -v ${CONFIG_PARAMS}
-python $EXE ${CONFIG_PARAMS} --datfile ${DAT_FILE} > ${LOGS} 2>&1
+python $EXE ${CONFIG_PARAMS} --datfile ${DAT_FILE} --config-id ${CONFIG_ID} > ${LOGS} 2>&1
 
 error() {
     echo "`TZ=UTC date`: error: $@"

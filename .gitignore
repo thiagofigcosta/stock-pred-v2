@@ -11,6 +11,8 @@ experiment/
 experiments/
 exp.tar.gz
 neural_genome_cache/
+irace/*.log
+irace/*.dat
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
