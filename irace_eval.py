@@ -58,7 +58,6 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 			unit_forget_bias[l]=unit_forget_bias[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 			go_backwards[l]=go_backwards[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 
-
 		hyperparameters=Hyperparameters(name=hyper_id,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropouts,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_funcs,recurrent_activation_functions=recurrent_activation_funcs,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropouts,binary_classifier=binary_classifier)
 
 		never_crawl=os.getenv('NEVER_CRAWL',default='False')
