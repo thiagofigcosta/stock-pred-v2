@@ -11,81 +11,83 @@ from Hyperparameters import Hyperparameters
 from Enums import NodeType,Loss,Metric,Optimizers,Features
 	
 def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
-	if type(input_features) is not list:
-		input_features=[input_features]
-	for i in range(len(input_features)):
-		if isinstance(input_features[i],Features):
-			input_features[i]=input_features[i].toDatasetName()
-	if isinstance(output_feature,Features):
-		output_feature=output_feature.toDatasetName()
-	if isinstance(index_feature,Features):
-		index_feature=index_feature.toDatasetName()
-	if type(metrics) is not list:
-		metrics=[metrics]
-	for i in range(len(metrics)):
-		if isinstance(metrics[i],Metric):
-			metrics[i]=metrics[i].toKerasName()
-	if isinstance(loss,Loss):
-		loss=loss.toKerasName()
-	if confid is None:
-		hyper_id=Utils.randomUUID()
-	else:
-		hyper_id=confid
+	try:
+		if type(input_features) is not list:
+			input_features=[input_features]
+		for i in range(len(input_features)):
+			if isinstance(input_features[i],Features):
+				input_features[i]=input_features[i].toDatasetName()
+		if isinstance(output_feature,Features):
+			output_feature=output_feature.toDatasetName()
+		if isinstance(index_feature,Features):
+			index_feature=index_feature.toDatasetName()
+		if type(metrics) is not list:
+			metrics=[metrics]
+		for i in range(len(metrics)):
+			if isinstance(metrics[i],Metric):
+				metrics[i]=metrics[i].toKerasName()
+		if isinstance(loss,Loss):
+			loss=loss.toKerasName()
+		if confid is None:
+			hyper_id=Utils.randomUUID()
+		else:
+			hyper_id=confid
 
-	backwards_samples=int(backwards_samples)
-	forward_samples=int(forward_samples)
-	max_epochs=int(max_epochs)
-	stateful=stateful.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
-	batch_size=int(batch_size)
-	use_dense_on_output=use_dense_on_output.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+		backwards_samples=int(backwards_samples)
+		forward_samples=int(forward_samples)
+		max_epochs=int(max_epochs)
+		stateful=stateful.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+		batch_size=int(batch_size)
+		use_dense_on_output=use_dense_on_output.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 
-	patience_epochs_stop=int(patience_epochs_stop)
-	patience_epochs_reduce=int(patience_epochs_reduce)
-	reduce_factor=float(reduce_factor)
-	normalize=bool(normalize)
-	optimizer=Optimizers(optimizer).toKerasName()
-	shuffle=shuffle.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+		patience_epochs_stop=int(patience_epochs_stop)
+		patience_epochs_reduce=int(patience_epochs_reduce)
+		reduce_factor=float(reduce_factor)
+		normalize=bool(normalize)
+		optimizer=Optimizers(optimizer).toKerasName()
+		shuffle=shuffle.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 
-	lstm_layers=int(lstm_layers)
-	for l in range(lstm_layers):
-		layer_sizes[l]=int(layer_sizes[l])
-		activation_funcs[l]=NodeType(activation_funcs[l]).toKerasName()
-		recurrent_activation_funcs[l]=NodeType(recurrent_activation_funcs[l]).toKerasName()
-		dropouts[l]=float(dropouts[l])
-		recurrent_dropouts[l]=float(recurrent_dropouts[l])
-		bias[l]=bias[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
-		unit_forget_bias[l]=unit_forget_bias[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
-		go_backwards[l]=go_backwards[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
-
-
-	hyperparameters=Hyperparameters(name=hyper_id,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropouts,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_funcs,recurrent_activation_functions=recurrent_activation_funcs,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropouts,binary_classifier=binary_classifier)
-
-	never_crawl=os.getenv('NEVER_CRAWL',default='False')
-	never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
-	
-	start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
-	end_date_formated_for_file=''.join(Utils.extractNumbersFromDate(end_date,reverse=True))
-	filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
-	crawler=Crawler()
-	filepath=crawler.getDatasetPath(filename)
-	if not Utils.checkIfPathExists(filepath) and not never_crawl:
-		crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
-		NeuralNetwork.enrichDataset(filepath)
+		lstm_layers=int(lstm_layers)
+		for l in range(lstm_layers):
+			layer_sizes[l]=int(layer_sizes[l])
+			activation_funcs[l]=NodeType(activation_funcs[l]).toKerasName()
+			recurrent_activation_funcs[l]=NodeType(recurrent_activation_funcs[l]).toKerasName()
+			dropouts[l]=float(dropouts[l])
+			recurrent_dropouts[l]=float(recurrent_dropouts[l])
+			bias[l]=bias[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+			unit_forget_bias[l]=unit_forget_bias[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+			go_backwards[l]=go_backwards[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 
 
-	neuralNetwork=NeuralNetwork(hyperparameters,stock_name=stock,verbose=False)
-	neuralNetwork.loadDataset(filepath,plot=False,blocking_plots=False,save_plots=True)
-	neuralNetwork.buildModel(plot_model_to_file=True)
-	neuralNetwork.train()
-	neuralNetwork.restoreCheckpointWeights(delete_after=False)
-	neuralNetwork.save()
-	neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
-	neuralNetwork.eval(plot=True,print_prediction=False,blocking_plots=False,save_plots=True)
-	if use_ok_instead_of_f1:
-		output=neuralNetwork.metrics['test']['Class Metrics']['OK_Rate']
-	else:
-		output=neuralNetwork.metrics['test']['Class Metrics']['f1_monark']*100
-	neuralNetwork.destroy()
+		hyperparameters=Hyperparameters(name=hyper_id,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropouts,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_funcs,recurrent_activation_functions=recurrent_activation_funcs,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropouts,binary_classifier=binary_classifier)
+
+		never_crawl=os.getenv('NEVER_CRAWL',default='False')
+		never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
+		
+		start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
+		end_date_formated_for_file=''.join(Utils.extractNumbersFromDate(end_date,reverse=True))
+		filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)
+		crawler=Crawler()
+		filepath=crawler.getDatasetPath(filename)
+		if not Utils.checkIfPathExists(filepath) and not never_crawl:
+			crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
+			NeuralNetwork.enrichDataset(filepath)
+
+		neuralNetwork=NeuralNetwork(hyperparameters,stock_name=stock,verbose=False)
+		neuralNetwork.loadDataset(filepath,plot=False,blocking_plots=False,save_plots=True)
+		neuralNetwork.buildModel(plot_model_to_file=True)
+		neuralNetwork.train()
+		neuralNetwork.restoreCheckpointWeights(delete_after=False)
+		neuralNetwork.save()
+		neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
+		neuralNetwork.eval(plot=True,print_prediction=False,blocking_plots=False,save_plots=True)
+		if use_ok_instead_of_f1:
+			output=neuralNetwork.metrics['test']['Class Metrics']['OK_Rate']
+		else:
+			output=neuralNetwork.metrics['test']['Class Metrics']['f1_monark']*100
+		neuralNetwork.destroy()
+	except:
+		output=-100 # worst result
 
 	output*=-1 # irace minimizes results
 	

@@ -53,9 +53,7 @@ error() {
 # It assumes that the objective value is the first number in
 # the first column of the last line of the output.
 if [ -s "${DAT_FILE}" ]; then
-	COST=$(cat "${DAT_FILE}" | grep -e '^[0-9]' | cut -f1)
-	# use echo "-$COST" to
-	# Negative because score is maximised but irace minimises.
+	COST=$(cat "${DAT_FILE}" | grep -E '^\-?[0-9\.]+$' | cut -f1)
     echo "$COST"
     rm -f "${LOGS}" "${DAT_FILE}" 
     exit 0
