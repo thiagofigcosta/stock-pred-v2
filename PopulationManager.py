@@ -40,6 +40,7 @@ class PopulationManager(object):
 		self.after_gen_callback=None
 
 	def naturalSelection(self, gens, verbose=False, verbose_generations=None):
+		mean_delta=0.0
 		for g in range(1,gens+1):
 			t1=time.time()
 			if self.genetic_algorithm.looking_highest_fitness:
@@ -100,6 +101,7 @@ class PopulationManager(object):
 				self.population.sort()
 			t2=time.time()
 			delta=t2-t1
+			mean_delta+=delta
 			if self.after_gen_callback is not None:
 				args_list=[len(self.population),g,best_out,delta,self.population,self.hall_of_fame]
 				self.after_gen_callback(args_list)
@@ -108,3 +110,4 @@ class PopulationManager(object):
 				break
 			if verbose_generations or self.print_deltas:
 				print('Generation {} of {}, size: {} takes: {}'.format(g,gens,len(self.population),Utils.timestampByExtensive(delta)))
+		return mean_delta/gens
