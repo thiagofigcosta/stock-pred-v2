@@ -92,7 +92,14 @@ docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | 
 or
 
 ```
-docker run -e RUN_IRACE='True' -d stock-pred:2.0.0
+docker run -e RUN_IRACE_NAS='True' -d stock-pred:2.0.0
+docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
+```
+
+or
+
+```
+docker run -e RUN_GENETIC_NAS='True' -d stock-pred:2.0.0
 docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
 ```
 
@@ -111,7 +118,7 @@ docker stop $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1
 ### To copy experiment results compressed
 
 ```
-docker exec -it $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1) bash -c "tar -zcvf /code/exp.tar.gz /code/datasets /code/saved_models /code/saved_plots log.txt"
+docker exec -it $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1) bash -c "tar -zcvf /code/exp.tar.gz /code/datasets /code/saved_models /code/saved_plots /code/irace log.txt"
 docker cp $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1):/code/exp.tar.gz .
 ```
 

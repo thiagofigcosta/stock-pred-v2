@@ -102,15 +102,7 @@ if __name__ == '__main__':
 	
 	if os.getcwd().endswith('irace') or os.getcwd().endswith('irace/'):
 		os.chdir('..')
-	
-	input_features=[[],
-					[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH],
-					[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
-					[Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
-					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME],
-					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
-					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN]]
-	
+	input_features=Hyperparameters.getFeatureGroups()
 	start_date='01/01/2016' #Utils.FIRST_DATE
 	end_date='07/05/2021'
 	test_date='07/02/2021'

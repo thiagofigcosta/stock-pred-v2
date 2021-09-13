@@ -4,6 +4,7 @@
 import hashlib
 import math
 import json
+from Enums import Features
 from Utils import Utils
 
 class Hyperparameters:
@@ -197,3 +198,13 @@ class Hyperparameters:
 	def valueToClass(value):
 		threshold=.5
 		return 1 if float(value)>threshold else 0
+
+	@staticmethod
+	def getFeatureGroups():
+		return [[],
+                [Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH],
+                [Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+                [Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+                [Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME],
+                [Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+                [Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN]]
