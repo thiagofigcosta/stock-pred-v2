@@ -232,10 +232,22 @@ def dataset_test():
 
 
 def network_architecture_search_genetic_test():
+	feature_group=2 #0-6
 	binary_classifier=False
 	use_ok_instead_of_f1=True
+	stock='T'
+
+
+
 	Genome.CACHE_WEIGHTS=False
-	search_maximum=True
+	search_maximum=True	
+	input_features=[[],
+					[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH],
+					[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+					[Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME],
+					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN]]
 
 	never_crawl=os.getenv('NEVER_CRAWL',default='False')
 	never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
@@ -244,8 +256,8 @@ def network_architecture_search_genetic_test():
 	search_space.add(5,60,SearchSpace.Type.INT,'backwards_samples')
 	search_space.add(1,14,SearchSpace.Type.INT,'forward_samples')
 	search_space.add(1,5,SearchSpace.Type.INT,'lstm_layers')
-	search_space.add(1000,5000,SearchSpace.Type.INT,'max_epochs')
-	search_space.add(1000,5000,SearchSpace.Type.INT,'patience_epochs_stop')
+	search_space.add(500,5000,SearchSpace.Type.INT,'max_epochs')
+	search_space.add(100,5000,SearchSpace.Type.INT,'patience_epochs_stop')
 	search_space.add(0,1000,SearchSpace.Type.INT,'patience_epochs_reduce')
 	search_space.add(0.0,0.2,SearchSpace.Type.FLOAT,'reduce_factor')
 	search_space.add(0,128,SearchSpace.Type.INT,'batch_size')
@@ -257,8 +269,8 @@ def network_architecture_search_genetic_test():
 	search_space.add(False,False,SearchSpace.Type.BOOLEAN,'shuffle')
 	search_space.add(False,True,SearchSpace.Type.BOOLEAN,'use_dense_on_output')
 	search_space.add(10,200,SearchSpace.Type.INT,'layer_sizes')
-	search_space.add(0,0.5,SearchSpace.Type.FLOAT,'dropout_values')
-	search_space.add(0,0.5,SearchSpace.Type.FLOAT,'recurrent_dropout_values')
+	search_space.add(0,0.3,SearchSpace.Type.FLOAT,'dropout_values')
+	search_space.add(0,0.3,SearchSpace.Type.FLOAT,'recurrent_dropout_values')
 	search_space.add(False,True,SearchSpace.Type.BOOLEAN,'bias')
 	search_space.add(False,True,SearchSpace.Type.BOOLEAN,'unit_forget_bias')
 	search_space.add(False,True,SearchSpace.Type.BOOLEAN,'go_backwards')
@@ -267,21 +279,18 @@ def network_architecture_search_genetic_test():
 	train_percent=.8
 	val_percent=.3
 	if binary_classifier:
-		input_features=[Features.UP]
+		input_features=[Features.UP]+input_features[feature_group]
 		output_feature=Features.UP
 		index_feature='Date'
 		model_metrics=['accuracy','mean_squared_error']
 		loss='categorical_crossentropy'
 	else:
-		input_features=[Features.CLOSE]
+		input_features=[Features.CLOSE]+input_features[feature_group]
 		output_feature=Features.CLOSE
 		index_feature='Date'
-		model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
 		loss='mean_squared_error'
 
-
-
-	stock='T'
 	start_date='01/01/2016' #Utils.FIRST_DATE
 	end_date='07/05/2021'
 	test_date='07/02/2021'
@@ -294,7 +303,6 @@ def network_architecture_search_genetic_test():
 		crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
 		NeuralNetwork.enrichDataset(filepath)
 		
-
 	def train_callback(genome):
 		nonlocal stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,use_ok_instead_of_f1
 		preserve_weights=False # TODO not implemented yet!

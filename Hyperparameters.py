@@ -11,7 +11,7 @@ class Hyperparameters:
 	REGRESSION_OUTPUT_ACTIVATION_FUNCTION='linear'
 	BINARY_OUTPUT_ACTIVATION_FUNCTION='sigmoid'
 
-	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs_stop=10,patience_epochs_reduce=10,reduce_factor=.1,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='rmsprop',model_metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True,activation_functions='tanh',recurrent_activation_functions='sigmoid',bias=True,use_dense_on_output=False,unit_forget_bias=True,go_backwards=False,recurrent_dropout_values=0,binary_classifier=False):
+	def __init__(self,name='',input_features=['Close'],output_feature='Close',index_feature='Date',backwards_samples=20,forward_samples=7,lstm_layers=2,max_epochs=200,patience_epochs_stop=10,patience_epochs_reduce=10,reduce_factor=.1,batch_size=5,stateful=False,dropout_values=[0,0],layer_sizes=[25,15],normalize=True,optimizer='rmsprop',model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity'],loss='mean_squared_error',train_percent=.8,val_percent=.2,amount_companies=1,shuffle=True,activation_functions='tanh',recurrent_activation_functions='sigmoid',bias=True,use_dense_on_output=False,unit_forget_bias=True,go_backwards=False,recurrent_dropout_values=0,binary_classifier=False):
 		self.uuid=None
 		self.name=name
 		self.backwards_samples=backwards_samples # [5, 60]

@@ -4,7 +4,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3' # DISABLE TENSORFLOW WARNING
 import re
-import keras
+from tensorflow import keras # import keras 
 import shutil
 import pareto
 import pandas as pd
@@ -18,12 +18,13 @@ from Dataset import Dataset
 from NNDatasetContainer import NNDatasetContainer
 from Utils import Utils
 from Actuator import Actuator
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
-from keras.layers import Dense, Dropout
-from keras.layers import LSTM
-from keras.models import Sequential, load_model
-from keras.optimizers import Adam, SGD, RMSprop
-from keras.utils.vis_utils import plot_model
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau # from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.layers import Dense, Dropout # from keras.layers import Dense, Dropout
+from tensorflow.keras.layers import LSTM # from keras.layers import LSTM
+from tensorflow.keras.models import Sequential, load_model # from keras.models import Sequential, load_model
+from tensorflow.keras.optimizers import Adam, SGD, RMSprop # from keras.optimizers import Adam, SGD, RMSprop
+from tensorflow.keras.utils import plot_model # from keras.utils.vis_utils import plot_model
+import tensorflow.keras.backend as K # import keras.backend as K
 from matplotlib import pyplot as plt
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 plt.rcParams.update({'figure.max_open_warning': 0})
@@ -78,6 +79,28 @@ class NeuralNetwork:
 		plotpath=Utils.joinPath(NeuralNetwork.SAVED_PLOTS_PATH,filename)
 		return plotpath
 
+
+	def _metricsFactory(self):
+		def r_squared(y_true, y_pred):
+			SS_res =  K.sum(K.square( y_true-y_pred ))
+			SS_tot = K.sum(K.square( y_true - K.mean(y_true) ) )
+			return ( 1 - SS_res/(SS_tot + K.epsilon()) )
+		def r_squared(y_true, y_pred):
+			residual = tf.reduce_sum(tf.square(tf.subtract(y_true, y_pred)))
+			total = tf.reduce_sum(tf.square(tf.subtract(y_true, tf.reduce_mean(y_true))))
+			r2 = tf.subtract(1.0, tf.divide(residual, total))
+			return r2
+
+		r_squared.__name__ = 'R2'
+		return {'R2':r_squared}
+
+	def _metricsFactoryArray(self,metrics=[]):
+		metrics=metrics.copy()
+		if 'R2' in metrics:
+			metrics.remove('R2')
+			metrics.append(self._metricsFactory()['R2'])
+		return metrics
+
 	def setFilenames(self):
 		self.basename=self.hyperparameters.uuid+'_'+self.stock_name
 		self.filenames={}
@@ -96,7 +119,7 @@ class NeuralNetwork:
 
 	def restoreCheckpointWeights(self,delete_after=True):
 		if self.filenames['checkpoint'] is not None and Utils.checkIfPathExists(self.getModelPath(self.filenames['checkpoint'])):
-			loaded_model=load_model(self.getModelPath(self.filenames['checkpoint']))
+			loaded_model=load_model(self.getModelPath(self.filenames['checkpoint']),custom_objects=self._metricsFactory())
 			if self.verbose:
 				print('Restoring model checkpoint...')
 			if self.model is None:
@@ -109,7 +132,7 @@ class NeuralNetwork:
 	def load(self):
 		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
 		self.setFilenames()
-		self.model=load_model(self.getModelPath(self.filenames['model']))
+		self.model=load_model(self.getModelPath(self.filenames['model']),custom_objects=self._metricsFactory())
 		self.batchSizeWorkaround() # needed to avoid cropping test data
 		if self.data is None:
 			self.data=NNDatasetContainer(None,Utils.loadObj(self.getModelPath(self.filenames['scaler'])),self.hyperparameters.train_percent,self.hyperparameters.val_percent,self.hyperparameters.backwards_samples,self.hyperparameters.forward_samples,self.hyperparameters.normalize,self.verbose)
@@ -565,7 +588,7 @@ class NeuralNetwork:
 			opt=RMSprop(**clip_dict)
 		else:
 			raise Exception('Unknown optimizer {}'.format(self.hyperparameters.optimizer))
-		model.compile(loss=self.hyperparameters.loss,optimizer=opt,metrics=self.hyperparameters.model_metrics)
+		model.compile(loss=self.hyperparameters.loss,optimizer=opt,metrics=self._metricsFactoryArray(self.hyperparameters.model_metrics))
 		callbacks=[]
 		if self.hyperparameters.patience_epochs_stop>0:
 			early_stopping=EarlyStopping(monitor='val_loss', mode='auto', patience=self.hyperparameters.patience_epochs_stop, verbose=1 if self.verbose else 0)
@@ -615,29 +638,67 @@ class NeuralNetwork:
 	def enrichDataset(paths,base_column_name='Close'):
 		if type(paths)!=list:
 			paths=[paths]
-		enriched_column_names=('fast_moving_avg','slow_moving_avg','up')
+		cloh_enriched_column_names=('oc','oh','ol','ch','cl','lh')
 		for path in paths:
 			frame=pd.read_csv(path)
-			rows_to_crop=0
-			stock_column=frame[base_column_name].tolist()
-			enriched_columns={}
-			for enriched_column_name in enriched_column_names:
-				if enriched_column_name not in frame.columns:
-					# enrich
-					print('Enriching column {} on {}...'.format(enriched_column_name,path))
-					if enriched_column_name == 'fast_moving_avg':
-						enriched_column=Utils.calcMovingAverage(stock_column,13)
-					elif enriched_column_name == 'slow_moving_avg':
-						enriched_column=Utils.calcMovingAverage(stock_column,21)
-					elif enriched_column_name == 'up':
-						enriched_column=Utils.calcDiffUp(stock_column)
-					rows_to_crop=max(rows_to_crop,(len(stock_column)-len(enriched_column)))
-					enriched_columns[enriched_column_name]=enriched_column
-			frame = frame.loc[rows_to_crop:]
-			new_size=len(frame.index)
-			for k,v in enriched_columns.items():
-				frame.insert(len(frame.columns), k, v[-new_size:])
-			frame.to_csv(path,index=False)
+			if 'Open' in frame and 'Close' in frame and 'Low' in frame and 'High' in frame:
+				open_column=frame['Open']
+				close_column=frame['Close']
+				low_column=frame['Low']
+				high_column=frame['High']
+				enriched_columns={}
+				for enriched_column_name in cloh_enriched_column_names:
+					if enriched_column_name not in frame.columns:
+						# enrich
+						print('Enriching column {} on {}...'.format(enriched_column_name,path))
+						if enriched_column_name == 'oc':
+							enriched_column=((close_column-open_column)/open_column).tolist()
+						elif enriched_column_name == 'oh':
+							enriched_column=((high_column-open_column)/open_column).tolist()
+						elif enriched_column_name == 'ol':
+							enriched_column=((low_column-open_column)/open_column).tolist()
+						elif enriched_column_name == 'ch':
+							enriched_column=((high_column-close_column)/close_column).tolist()
+						elif enriched_column_name == 'cl':
+							enriched_column=((low_column-close_column)/close_column).tolist()
+						elif enriched_column_name == 'lh':
+							enriched_column=((high_column-low_column)/low_column).tolist()
+						enriched_columns[enriched_column_name]=enriched_column
+				new_size=len(frame.index)
+				for k,v in enriched_columns.items():
+					frame.insert(len(frame.columns), k, v[-new_size:])
+				frame.to_csv(path,index=False)
+
+		stock_enriched_column_names=('fast_moving_avg','slow_moving_avg','up','log_return','fast_exp_moving_avg','slow_exp_moving_avg')
+		for path in paths:
+			frame=pd.read_csv(path)
+			if base_column_name in frame:
+				rows_to_crop=0
+				stock_column=frame[base_column_name].tolist()
+				enriched_columns={}
+				for enriched_column_name in stock_enriched_column_names:
+					if enriched_column_name not in frame.columns:
+						# enrich
+						print('Enriching column {} on {}...'.format(enriched_column_name,path))
+						if enriched_column_name == 'fast_moving_avg':
+							enriched_column=Utils.calcMovingAverage(stock_column,13)
+						elif enriched_column_name == 'slow_moving_avg':
+							enriched_column=Utils.calcMovingAverage(stock_column,21)
+						elif enriched_column_name == 'up':
+							enriched_column=Utils.calcDiffUp(stock_column)
+						elif enriched_column_name == 'log_return':
+							enriched_column=Utils.logReturn(stock_column)
+						elif enriched_column_name == 'fast_exp_moving_avg':
+							enriched_column=Utils.calcExpMovingAverage(stock_column,13)
+						elif enriched_column_name == 'slow_exp_moving_avg':
+							enriched_column=Utils.calcExpMovingAverage(stock_column,21)
+						rows_to_crop=max(rows_to_crop,(len(stock_column)-len(enriched_column)))
+						enriched_columns[enriched_column_name]=enriched_column
+				frame = frame.loc[rows_to_crop:]
+				new_size=len(frame.index)
+				for k,v in enriched_columns.items():
+					frame.insert(len(frame.columns), k, v[-new_size:])
+				frame.to_csv(path,index=False)
 
 
 	def loadTestDataset(self,paths,company_index_array=[0],from_date=None,plot=False,blocking_plots=False, save_plots=False):

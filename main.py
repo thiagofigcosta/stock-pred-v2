@@ -245,7 +245,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 def main(argv):
 
 	all_known_stocks=[
-						'GOOG','AMD','CSCO','TSLA', # international companies
+						'GOOG','AMD','CSCO','TSLA','AAPL', # international companies
 						'T','IBM', # dividend aristocrats
 						'BTC-USD',	# crypto currencies
 						'BRL=X', # currency exchange rate 
@@ -351,7 +351,7 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			print('Clearing contents of: {}'.format(NeuralNetwork.SAVED_PLOTS_PATH))
 			Utils.deleteFolderContents(NeuralNetwork.SAVED_PLOTS_PATH)
 			print('Clearing contents of: {}'.format(Crawler.DATASET_PATH))
-			Utils.deleteFolderContents(Crawler.DATASET_PATH)
+			Utils.deleteFolderContents(Crawler.DATASET_PATH,['shampoo_example_dataset.csv'])
 		elif opt == 'analyze-metrics':
 			analyze_metrics=True
 		elif opt == 'move-models-to-backup':

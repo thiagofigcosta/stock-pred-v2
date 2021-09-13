@@ -1,7 +1,7 @@
 #!/bin/python3
 # -*- coding: utf-8 -*-
 
-from keras.callbacks import Callback
+from tensorflow.keras.callbacks import Callback # from keras.callbacks import Callback
 
 class CustomStatefulCallback(Callback):
 

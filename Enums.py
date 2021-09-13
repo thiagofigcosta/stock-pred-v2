@@ -13,7 +13,16 @@ class Features(Enum):
 	VOLUME = 5
 	FAST_MOVING_AVG = 6
 	SLOW_MOVING_AVG = 7
-	UP = 8
+	LOG_RETURN = 8
+	UP = 9
+	OC = 10
+	OH = 11
+	OL = 12
+	CH = 13
+	CL = 14
+	LH = 15
+	FAST_EXP_MOVING_AVG = 16
+	SLOW_EXP_MOVING_AVG = 17
 
 	def toDatasetName(self):
 		if self == Features.CLOSE:
@@ -34,6 +43,24 @@ class Features(Enum):
 			return 'slow_moving_avg'	
 		elif self == Features.UP:
 			return 'up'	
+		elif self == Features.LOG_RETURN:
+			return 'log_return'	
+		elif self == Features.OC:
+			return 'oc'	
+		elif self == Features.OH:
+			return 'oh'	
+		elif self == Features.OL:
+			return 'ol'	
+		elif self == Features.CH:
+			return 'ch'	
+		elif self == Features.CL:
+			return 'cl'	
+		elif self == Features.LH:
+			return 'lh'	
+		elif self == Features.FAST_EXP_MOVING_AVG:
+			return 'fast_exp_moving_avg'	
+		elif self == Features.SLOW_EXP_MOVING_AVG:
+			return 'slow_exp_moving_avg'	
 		return None
 
 class Metric(Enum):
@@ -45,6 +72,8 @@ class Metric(Enum):
 	F1 = 5
 	PRECISION = 6
 	RECALL = 7
+	RMSE = 8
+	R2 = 9
 
 	def toKerasName(self):
 		if self == Metric.RAW_LOSS:
@@ -62,7 +91,11 @@ class Metric(Enum):
 		elif self == Metric.MAE:
 			return 'mean_absolute_error'
 		elif self == Metric.COSINE_SIM:
-			return 'cosine_similarity'		   
+			return 'cosine_similarity'		 
+		elif self == Metric.RMSE:
+			return 'root_mean_squared_error'
+		elif self == Metric.R2:
+			return 'R2'
 		return None
 		
 
@@ -119,6 +152,7 @@ class Loss(Enum):
 	CATEGORICAL_CROSSENTROPY = 1
 	MEAN_SQUARED_ERROR = 2
 	MEAN_ABSOLUTE_ERROR = 3
+	ROOT_MEAN_SQUARED_ERROR = 4
 
 	def toKerasName(self):
 		if self == Loss.BINARY_CROSSENTROPY:
@@ -129,6 +163,8 @@ class Loss(Enum):
 			return 'mean_squared_error'
 		elif self == Loss.MEAN_ABSOLUTE_ERROR:
 			return 'mean_absolute_error'
+		elif self == Loss.ROOT_MEAN_SQUARED_ERROR:
+			return 'root_mean_squared_error'
 		return None
 
 class Optimizers(Enum):

@@ -91,7 +91,7 @@ class Dataset:
 							for b in a:
 								for i,c in enumerate(b):
 									if abs(c)>max_vals[i]:
-										max_vals[i]=c
+										max_vals[i]=abs(c)
 				if cur.next is None:
 					break
 				cur=cur.next

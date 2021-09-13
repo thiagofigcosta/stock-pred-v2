@@ -95,11 +95,22 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 
 	
 if __name__ == '__main__':
-	if os.getcwd().endswith('irace') or os.getcwd().endswith('irace/'):
-		os.chdir('..')
-	stock_name='T'
+	feature_group=2 #0-6
 	binary_classifier=False
 	use_ok_instead_of_f1=True
+	stock_name='T'
+	
+	if os.getcwd().endswith('irace') or os.getcwd().endswith('irace/'):
+		os.chdir('..')
+	
+	input_features=[[],
+					[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH],
+					[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+					[Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME],
+					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
+					[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN]]
+	
 	start_date='01/01/2016' #Utils.FIRST_DATE
 	end_date='07/05/2021'
 	test_date='07/02/2021'
@@ -108,16 +119,16 @@ if __name__ == '__main__':
 	val_percent=.3
 	normalize=True
 	if binary_classifier:
-		input_features=[Features.UP]
+		input_features=[Features.UP]+input_features[feature_group]
 		output_feature=Features.UP
 		index_feature='Date'
 		metrics=['accuracy','mean_squared_error']
 		loss='categorical_crossentropy'
 	else:
-		input_features=[Features.CLOSE]
+		input_features=[Features.CLOSE]+input_features[feature_group]
 		output_feature=Features.CLOSE
 		index_feature='Date'
-		metrics=['mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
 		loss='mean_squared_error'
 
 	ap = argparse.ArgumentParser()

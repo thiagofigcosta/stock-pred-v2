@@ -10,12 +10,8 @@ if [[ "$RUN_DEFAULT_EXP" = [tT][rR][uU][eE] ]]; then
     python main.py --train --eval --plot --plot-eval --save-plots --enrich-dataset --use-all-hyper-on-all-stocks --analyze-metrics --move-models-to-backup >> log.txt \
     python main.py --dummy --restore-backups >> log.txt; \
     echo -e "\n\n\nDONE\n" >> log.txt
-
-else if [[ "$RUN_IRACE" = [tT][rR][uU][eE] ]]; then
-    (cd /code/irace ; /usr/local/lib/R/site-library/irace/bin/irace)
+elif [[ "$RUN_IRACE" = [tT][rR][uU][eE] ]]; then
+    (cd /code/irace ; /usr/local/lib/R/site-library/irace/bin/irace > log.txt)
 fi
-
-
-
 
 tail -f /dev/null # to keep running

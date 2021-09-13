@@ -4,7 +4,7 @@ ignoreme/
 
 log.txt
 
-datasets/
+datasets/*
 saved_models/
 saved_plots/
 experiment/

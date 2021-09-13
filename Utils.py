@@ -7,6 +7,7 @@ import sys
 import time
 import json
 import shutil
+import math
 import codecs
 import joblib
 import gzip
@@ -102,11 +103,12 @@ class Utils:
 		return paths
 
 	@staticmethod
-	def deleteFolderContents(folder):
+	def deleteFolderContents(folder,ignore=[]):
 		if os.path.exists(folder):
 			for filename in os.listdir(folder):
-				file_path = Utils.joinPath(folder,filename)
-				Utils.deletePath(file_path)
+				if filename not in ignore:
+					file_path = Utils.joinPath(folder,filename)
+					Utils.deletePath(file_path)
 
 	@staticmethod
 	def deletePath(path):
@@ -441,3 +443,32 @@ class Utils:
 				data = base64.b64decode(dct['__ndarray__'].encode())
 				return np.frombuffer(data, dct['dtype']).reshape(dct['shape'])
 			return dct
+
+
+	@staticmethod
+	def logReturn(input_arr):
+		l_return = []
+		l = []
+		for el in input_arr:
+			l.append(math.log(el))
+		for i in range(1,len(l)):
+			l_return.append(l[i]-l[i-1])
+		return l_return
+
+
+	@staticmethod
+	def calcExpMovingAverage(input_arr,window):
+		ema = []
+		j = 1
+		# get window sma first and calculate the next window period ema
+		sma = sum(input_arr[:window]) / window 
+		multiplier = 2 / float(1 + window)
+		ema.append(sma)
+		# EMA(current) = ( (Price(current) - EMA(prev) ) x Multiplier) + EMA(prev)
+		ema.append(( (input_arr[window] - sma) * multiplier) + sma)
+		for i in input_arr[window+1:]:
+			tmp = ( (i - ema[j]) * multiplier) + ema[j]
+			j = j + 1
+			ema.append(tmp)
+		return ema
+			

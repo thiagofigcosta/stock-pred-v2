@@ -44,6 +44,14 @@ echo "install.packages('irace', repos='http://cran.us.r-project.org')" | R --no-
 
 ### Run irace
 
+To find where is the irace installed on OS:
+```
+R
+> library("irace")
+> system.file(package = "irace")
+```
+
+You might want to use the full instalation path on the OS.
 ```
 cd irace
 irace
@@ -79,6 +87,12 @@ or
 
 ```
 docker run -e RUN_DEFAULT_EXP='True' -d stock-pred:2.0.0
+docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
+```
+or
+
+```
+docker run -e RUN_IRACE='True' -d stock-pred:2.0.0
 docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
 ```
 
