@@ -10,7 +10,7 @@ from Utils import Utils
 class EnhancedGeneticAlgorithm(GeneticAlgorithm):
 	
 	WILL_OF_D_PERCENT=0.07
-	RECYCLE_THRESHOLD_PERCENT=0.03
+	RECYCLE_THRESHOLD_PERCENT=0.05
 
 	def __init__(self, looking_highest_fitness, max_children, max_age, mutation_rate, sex_rate, recycle_rate, rank_type=GeneticRankType.INCREMENTAL):
 		super().__init__(looking_highest_fitness)
@@ -101,7 +101,7 @@ class EnhancedGeneticAlgorithm(GeneticAlgorithm):
 				to_cut_off=int(len(individuals)-max_allowed_population)
 				if to_cut_off > 0:
 					if self.rank_type==GeneticRankType.RELATIVE:
-						for e in range(len(individuals),len(individuals)-to_cut_off,-1):
+						for e in range(len(individuals)-1,len(individuals)-to_cut_off,-1):
 							individual=individuals[e]
 							if GeneticAlgorithm.FREE_MEMORY_MANUALLY:
 								del individual
@@ -180,22 +180,22 @@ class EnhancedGeneticAlgorithm(GeneticAlgorithm):
 
 	def randomize(self):
 		r=Utils.random()
-		if (r<=0.3):
-			r=Utils.randomFloat(0,0.07)
-		elif (r<=0.5):
-			r=Utils.randomFloat(0,0.11)
-		elif (r<=0.6):
-			r=Utils.randomFloat(0.03,0.13)
-		elif (r<=0.7):
-			r=Utils.randomFloat(0.06,0.15)
-		elif (r<=0.8):
-			r=Utils.randomFloat(0.08,0.24)
-		elif (r<=0.9):
-			r=Utils.randomFloat(0.1,0.27)
-		elif (r<=0.97):
-			r=Utils.randomFloat(0.23,0.30)
-		else:
-			r=Utils.randomFloat(0.333,0.666)
+		if (r<=0.42):
+            r=Utils.randomFloat(0,0.0777)
+        elif (r<=0.6):
+            r=Utils.randomFloat(0,0.12)
+        elif (r<=0.7):
+            r=Utils.randomFloat(0.03,0.15)
+        elif (r<=0.8):
+            r=Utils.randomFloat(0.03,0.18)
+        elif (r<=0.85):
+            r=Utils.randomFloat(0.06,0.22)
+        elif (r<=0.9):
+            r=Utils.randomFloat(0.09,0.24)
+        elif (r<=0.97):
+            r=Utils.randomFloat(0.1,0.33)
+        else:
+            r=Utils.randomFloat(0.1,0.666)
 		if (Utils.random()>0.5):
 			r=-(1+r)
 		else:
@@ -208,7 +208,7 @@ class EnhancedGeneticAlgorithm(GeneticAlgorithm):
 	def recycleBadIndividuals(self, individuals):
 		recycled=False
 		if self.rank_type==GeneticRankType.RELATIVE:
-			custom_range=range(len(individuals),-1,-1)
+			custom_range=range(len(individuals)-1,-1,-1)
 		else:
 			custom_range=range(0,len(individuals),1)
 		for i in custom_range:
@@ -236,7 +236,7 @@ class EnhancedGeneticAlgorithm(GeneticAlgorithm):
 
 	def calcBirthRate(self,amount_of_children=0):
 		max_pop=self.getMaxAllowedPopulation()
-		growth_rate=1
+		growth_rate=2.2
 		birth_rate=growth_rate*((max_pop-self.current_population_size)/max_pop) # Logistic Population Growth: I = rN ( K - N / K)
 		new_amount_of_children=math.ceil(amount_of_children*birth_rate)
 		# print('birth_rate:',birth_rate,' amount_of_children:',amount_of_children,' new_amount_of_children:',new_amount_of_children)
