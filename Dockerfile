@@ -20,7 +20,7 @@ COPY ./irace ./irace/
 COPY ./datasets ./datasets/
 
 RUN chmod +x entrypoint.sh
-RUN chmod +x  /code/irace/target-runner
+RUN chmod +x /code/irace/target-runner
 
 ENV PATH=/root/.local/bin:$PATH
 
