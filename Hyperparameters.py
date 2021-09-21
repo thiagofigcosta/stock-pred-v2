@@ -201,10 +201,14 @@ class Hyperparameters:
 
 	@staticmethod
 	def getFeatureGroups():
-		return [[],
-                [Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH],
-                [Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
-                [Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
-                [Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME],
-                [Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN],
-                [Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG,Features.LOG_RETURN]]
+		return [
+				[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.VOLUME,Features.LOG_RETURN,Features.FAST_EXP_MOVING_AVG,Features.SLOW_EXP_MOVING_AVG],
+				[Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.VOLUME,Features.LOG_RETURN,Features.FAST_EXP_MOVING_AVG,Features.SLOW_EXP_MOVING_AVG,Features.ADJ_CLOSE,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG],
+				[],
+				[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME],
+				[Features.OPEN,Features.HIGH,Features.LOW,Features.ADJ_CLOSE,Features.VOLUME,Features.OC,Features.OH,Features.OL,Features.CH,Features.CL,Features.LH,Features.FAST_EXP_MOVING_AVG,Features.SLOW_EXP_MOVING_AVG,Features.LOG_RETURN,Features.FAST_MOVING_AVG,Features.SLOW_MOVING_AVG]
+				]
+
+
+
+	

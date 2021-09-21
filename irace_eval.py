@@ -95,7 +95,7 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 
 	
 if __name__ == '__main__':
-	feature_group=2 #0-6
+	feature_group=0 #0-6
 	binary_classifier=False
 	use_ok_instead_of_f1=True
 	stock_name='T'
@@ -105,7 +105,7 @@ if __name__ == '__main__':
 	input_features=Hyperparameters.getFeatureGroups()
 	start_date='01/01/2016' #Utils.FIRST_DATE
 	end_date='07/05/2021'
-	test_date='07/02/2021'
+	test_date='07/01/2021'
 	amount_companies=1
 	train_percent=.8
 	val_percent=.3

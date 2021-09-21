@@ -15,7 +15,7 @@ from HallOfFame import HallOfFame
 from Genome import Genome
 from SearchSpace import SearchSpace
 
-feature_group=2 #0-6
+feature_group=0 #0-6
 binary_classifier=False
 use_ok_instead_of_f1=True
 stock='T'
@@ -40,7 +40,7 @@ search_space.add(0,128,SearchSpace.Type.INT,'batch_size')
 search_space.add(False,True,SearchSpace.Type.BOOLEAN,'stateful')
 search_space.add(True,True,SearchSpace.Type.BOOLEAN,'normalize')
 search_space.add(Utils.getEnumBorder(Optimizers,False),Utils.getEnumBorder(Optimizers,True),SearchSpace.Type.INT,'optimizer')
-search_space.add(NodeType.RELU,NodeType.TANH,SearchSpace.Type.INT,'activation_functions')
+search_space.add(NodeType.RELU,NodeType.LINEAR,SearchSpace.Type.INT,'activation_functions')
 search_space.add(NodeType.RELU,NodeType.HARD_SIGMOID,SearchSpace.Type.INT,'recurrent_activation_functions')
 search_space.add(False,False,SearchSpace.Type.BOOLEAN,'shuffle')
 search_space.add(False,True,SearchSpace.Type.BOOLEAN,'use_dense_on_output')
@@ -69,7 +69,7 @@ else:
 
 start_date='01/01/2016' #Utils.FIRST_DATE
 end_date='07/05/2021'
-test_date='07/02/2021'
+test_date='07/01/2021'
 start_date_formated_for_file=''.join(Utils.extractNumbersFromDate(start_date,reverse=True))
 end_date_formated_for_file=''.join(Utils.extractNumbersFromDate(end_date,reverse=True))
 filename='{}_daily_{}-{}.csv'.format(stock,start_date_formated_for_file,end_date_formated_for_file)

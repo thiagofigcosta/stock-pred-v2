@@ -18,4 +18,8 @@ elif [[ "$RUN_GENETIC_NAS" = [tT][rR][uU][eE] ]]; then
     echo -e "\n\n\nDONE\n" >> log.txt
 fi
 
+if [[ "$COMPRESS_AFTER_EXP" = [tT][rR][uU][eE] ]]; then
+    tar -zcvf /code/exp.tar.gz /code/datasets /code/saved_models /code/saved_plots /code/irace /code/log.txt
+fi
+
 tail -f /dev/null # to keep running

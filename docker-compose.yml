@@ -8,5 +8,14 @@ services:
         restart: always
         environment:
           NEVER_CRAWL: "true"
+          RUN_IRACE_NAS: "true"
+          COMPRESS_AFTER_EXP: "true"
         volumes:
           - ./datasets:/code/datasets
+        deploy:
+            replicas: 1
+            resources:
+                limits:
+                    memory: 60G
+                reservations:
+                    memory: 10G

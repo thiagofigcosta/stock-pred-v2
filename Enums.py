@@ -108,14 +108,14 @@ class NodeType(Enum):
 	RELU = 0
 	SIGMOID = 1
 	TANH = 2
-	HARD_SIGMOID = 3
-	SOFTMAX = 4
-	SOFTPLUS = 5
-	SOFTSIGN = 6
-	SELU = 7
-	ELU = 8
-	EXPONENTIAL = 9
-	LINEAR = 10
+	EXPONENTIAL = 3
+	LINEAR = 4
+	HARD_SIGMOID = 5
+	SOFTMAX = 6
+	SOFTPLUS = 7
+	SOFTSIGN = 8
+	SELU = 9
+	ELU = 10
 
 	def toKerasName(self):
 		if self == NodeType.RELU:
