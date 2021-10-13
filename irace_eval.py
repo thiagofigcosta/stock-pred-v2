@@ -10,7 +10,7 @@ from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
 from Enums import NodeType,Loss,Metric,Optimizers,Features
 	
-def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
+def main(stock,start_date,end_date,test_date,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
 	try:
 		if type(input_features) is not list:
 			input_features=[input_features]
@@ -80,13 +80,10 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 		neuralNetwork.save()
 		neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
 		neuralNetwork.eval(plot=True,print_prediction=False,blocking_plots=False,save_plots=True)
-		if use_ok_instead_of_f1:
-			output=neuralNetwork.metrics['test']['Class Metrics']['OK_Rate']
-		else:
-			output=neuralNetwork.metrics['test']['Class Metrics']['f1_monark']*100
+		output=Utils.computeNNFitness(neuralNetwork.metrics)
 		neuralNetwork.destroy()
 	except:
-		output=-100 # worst result
+		output=-2147483647 # worst result
 
 	output*=-1 # irace minimizes results
 	
@@ -97,7 +94,6 @@ def main(stock,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classif
 if __name__ == '__main__':
 	feature_group=0 #0-6
 	binary_classifier=False
-	use_ok_instead_of_f1=True
 	stock_name='T'
 	
 	if os.getcwd().endswith('irace') or os.getcwd().endswith('irace/'):
@@ -180,5 +176,5 @@ if __name__ == '__main__':
 		unit_forget_bias.append(args_dict['ufb-{}'.format(l)])
 		go_backwards.append(args_dict['gb-{}'.format(l)])
 
-	main(stock_name,start_date,end_date,test_date,use_ok_instead_of_f1,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bts,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile,args.confid)
+	main(stock_name,start_date,end_date,test_date,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bts,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile,args.confid)
 	

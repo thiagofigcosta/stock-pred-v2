@@ -472,3 +472,24 @@ class Utils:
 			ema.append(tmp)
 		return ema
 			
+
+	@staticmethod
+	def computeNNFitness(metrics):
+		try:
+			loss=metrics['test']['Model Metrics']['loss']
+			ok_rate=metrics['test']['Class Metrics']['OK_Rate']/100.0
+			try:
+				f1=metrics['test']['Class Metrics']['f1_monark']
+			except:
+				f1=ok_rate
+			try:
+				acc=metrics['test']['Model Metrics']['accuracy']
+			except:
+				acc=ok_rate
+			if loss!=loss or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
+				return 0
+			mean=(3*ok_rate+f1+acc)/5
+			loss=1/loss
+			return loss*mean
+		except:
+			return 0

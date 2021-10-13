@@ -17,7 +17,6 @@ from SearchSpace import SearchSpace
 
 feature_group=0 #0-6
 binary_classifier=False
-use_ok_instead_of_f1=True
 stock='T'
 use_enhanced=False
 
@@ -30,7 +29,7 @@ never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdad
 
 search_space=SearchSpace()
 search_space.add(5,60,SearchSpace.Type.INT,'backwards_samples')
-search_space.add(1,14,SearchSpace.Type.INT,'forward_samples')
+search_space.add(7,14,SearchSpace.Type.INT,'forward_samples')
 search_space.add(1,5,SearchSpace.Type.INT,'lstm_layers')
 search_space.add(500,5000,SearchSpace.Type.INT,'max_epochs')
 search_space.add(100,5000,SearchSpace.Type.INT,'patience_epochs_stop')
@@ -80,7 +79,7 @@ if not Utils.checkIfPathExists(filepath) and not never_crawl:
     NeuralNetwork.enrichDataset(filepath)
     
 def train_callback(genome):
-    global stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,use_ok_instead_of_f1
+    global stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier
     preserve_weights=False # TODO not implemented yet!
     hyperparameters=genome.toHyperparameters(input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier)
     neuralNetwork=NeuralNetwork(hyperparameters,stock_name=stock,verbose=False)
@@ -91,10 +90,7 @@ def train_callback(genome):
     neuralNetwork.save()
     neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
     neuralNetwork.eval(plot=True,print_prediction=False,blocking_plots=False,save_plots=True)
-    if use_ok_instead_of_f1:
-        output=neuralNetwork.metrics['test']['Class Metrics']['OK_Rate']
-    else:
-        output=neuralNetwork.metrics['test']['Class Metrics']['f1_monark']
+    output=Utils.computeNNFitness(neuralNetwork.metrics)
     neuralNetwork.destroy()
     return output
 

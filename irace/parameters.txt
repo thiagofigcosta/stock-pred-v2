@@ -27,7 +27,7 @@
 
 # 1:                    2:          3: 4:                5:
 backwardsSamples        "--bs="     i  (5, 60)
-forwardSamples          "--fs="     i  (1, 14)
+forwardSamples          "--fs="     i  (7, 14)
 maxEpochs               "--me="     i  (500, 5000)
 stateful                "--st="     c  ("True", "False")
 batchSize               "--bts="    i  (0, 128)
