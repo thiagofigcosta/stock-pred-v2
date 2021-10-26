@@ -475,23 +475,36 @@ class Utils:
 			
 
 	@staticmethod
-	def computeNNFitness(metrics):
+	def computeNNFitness(metrics,binary_classifier):
 		try:
-			loss=metrics['test']['Model Metrics']['loss']
-			ok_rate=metrics['test']['Class Metrics']['OK_Rate']/100.0
-			try:
-				f1=metrics['test']['Class Metrics']['f1_monark']
-			except:
-				f1=ok_rate
-			try:
-				acc=metrics['test']['Model Metrics']['accuracy']
-			except:
-				acc=ok_rate
-			if loss!=loss or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
-				return 0
-			mean=(3*ok_rate+f1+acc)/5
-			loss=1/loss
-			return loss*mean
+			if not binary_classifier:
+				loss=metrics['test']['Model Metrics']['loss']
+				ok_rate=metrics['test']['Class Metrics']['OK_Rate']/100.0
+				try:
+					f1=metrics['test']['Class Metrics']['f1_monark']
+				except:
+					f1=ok_rate
+				try:
+					acc=metrics['test']['Model Metrics']['accuracy']
+				except:
+					acc=ok_rate
+				if loss!=loss or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
+					return 0
+				mean=(3*ok_rate+f1+acc)/5
+				loss=1/loss
+				return loss*mean
+			else:
+				ok_rate=metrics['test']['Class Metrics']['OK_Rate']/100.0
+				try:
+					acc=metrics['test']['Model Metrics']['accuracy']
+				except:
+					acc=ok_rate
+				try:
+					acc2=metrics['test']['Class Metrics']['accuracy']
+				except:
+					acc2=ok_rate
+				mean=(3*ok_rate+acc+acc2)/5
+				return mean
 		except:
 			return 0
 

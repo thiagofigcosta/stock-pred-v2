@@ -64,7 +64,7 @@ def main(stock,start_date,end_date,test_date,binary_classifier,input_features,ou
 		neuralNetwork.save()
 		neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
 		neuralNetwork.eval(plot=True,print_prediction=False,blocking_plots=False,save_plots=True)
-		output=Utils.computeNNFitness(neuralNetwork.metrics)
+		output=Utils.computeNNFitness(neuralNetwork.metrics,binary_classifier)
 		neuralNetwork.destroy()
 	except:
 		output=-2147483647 # worst result
