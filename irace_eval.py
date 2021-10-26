@@ -77,7 +77,7 @@ def main(stock,start_date,end_date,test_date,binary_classifier,input_features,ou
 	
 if __name__ == '__main__':
 	feature_group=0 #0-6
-	binary_classifier=False
+	binary_classifier=True
 	stock_name='T'
 	
 	if os.getcwd().endswith('irace') or os.getcwd().endswith('irace/'):
@@ -89,17 +89,16 @@ if __name__ == '__main__':
 	amount_companies=1
 	train_percent=.8
 	val_percent=.3
+	index_feature='Date'
 	normalize=True
 	if binary_classifier:
 		input_features=[Features.UP]+input_features[feature_group]
 		output_feature=Features.UP
-		index_feature='Date'
 		metrics=['accuracy','mean_squared_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+input_features[feature_group]
 		output_feature=Features.CLOSE
-		index_feature='Date'
 		metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
 		loss='mean_squared_error'
 

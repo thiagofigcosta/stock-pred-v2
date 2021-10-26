@@ -49,17 +49,23 @@ def getPredefHyperparams():
 		recurrent_dropout_values=[0.01,0.01]
 		hyperparameters.append(Hyperparameters(binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
 
-	binary_classifier=False
 	feature_group=0
-	input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
-	output_feature=Features.CLOSE
-	index_feature='Date'
-	normalize=True
+	binary_classifier=False
 	train_percent=.8
 	val_percent=.3
 	amount_companies=1
-	model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
-	loss='mean_squared_error'
+	index_feature='Date'
+	normalize=True
+	if binary_classifier:
+		input_features=[Features.UP]+input_features[feature_group]
+		output_feature=Features.UP
+		metrics=['accuracy','mean_squared_error']
+		loss='categorical_crossentropy'
+	else:
+		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.CLOSE
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		loss='mean_squared_error'
 	# irace
 	backwards_samples=39
 	forward_samples=11
