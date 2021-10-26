@@ -15,6 +15,21 @@ class Actuator:
 	INITIAL_INVESTIMENT=22000
 
 	@staticmethod
+	def R2manual(y_real,y_pred):
+		rss=0.0
+		tss=0.0
+		mean=0.0
+		for el in y_real:
+			mean+=el
+		mean/=len(y_real)
+		for i in range(min(len(y_real),len(y_pred))):
+			rss+=(y_real[i]-y_pred[i])**2
+			tss+=(y_real[i]-mean)**2
+		if tss==0:
+			tss=0.00000000000001
+		return 1-(rss/tss)
+
+	@staticmethod
 	def sum(array):
 		summation=0
 		for el in array:

@@ -272,8 +272,11 @@ class NeuralNetwork:
 		# compute metrics
 		model_metrics=self.model.evaluate(data_to_eval[-1]['features'][:len(data_to_eval[-1]['labels'])],data_to_eval[-1]['labels'],batch_size=self.hyperparameters.batch_size,verbose=1 if self.verbose else 0)
 		aux={}
+		has_r2=False
 		for i in range(len(model_metrics)):
 			aux[self.model.metrics_names[i]] = model_metrics[i]
+			if self.model.metrics_names[i]=='R2': # TODO r2 might not be a good metric for this regression
+				has_r2=True
 		model_metrics=aux
 		metrics={'Model Metrics':model_metrics,'Strategy Metrics':[],'Class Metrics':[]}
 		for i in range(self.hyperparameters.amount_companies):
@@ -282,6 +285,8 @@ class NeuralNetwork:
 				swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_value_without_backwards,last_value_predictions[i],binary=True)
 			else:
 				swing_return,buy_hold_return,class_metrics_tmp=Actuator.analyzeStrategiesAndClassMetrics(real_value_without_backwards,fl_mean_value_predictions[i])
+				if has_r2:
+					metrics['Model Metrics']['R2_manual_c{}'.format(i)]=Actuator.R2manual(real_value_without_backwards,fl_mean_value_predictions[i])
 			viniccius13_return=Actuator.autoBuy13(real_value_without_backwards,fl_mean_value_predictions[i])
 			strategy_metrics={}
 			class_metrics={}
