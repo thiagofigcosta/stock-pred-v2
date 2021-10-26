@@ -51,7 +51,12 @@ class Actuator:
 		swing_return=Actuator.sum(swing_return) # se a ação subir investe, caso contrario não faz nada
 		buy_and_hold_return=Actuator.sum(real_stock_delta) # compra a ação e segura durante todo o periodo
 		
-		class_metrics={'f1_monark':f1_score(real_movement_encoded,pred_movement_encoded),'accuracy':accuracy,'precision':precision_score(real_movement_encoded,pred_movement_encoded),'recall':recall_score(real_movement_encoded,pred_movement_encoded),'roc auc':roc_auc_score(real_movement_encoded,pred_movement_encoded)}
+		roc=0
+		try:
+			roc=roc_auc_score(real_movement_encoded,pred_movement_encoded)
+		except:
+			pass
+		class_metrics={'f1_monark':f1_score(real_movement_encoded,pred_movement_encoded),'accuracy':accuracy,'precision':precision_score(real_movement_encoded,pred_movement_encoded),'recall':recall_score(real_movement_encoded,pred_movement_encoded),'roc auc':roc}
 		return swing_return, buy_and_hold_return, class_metrics
 
 	@staticmethod

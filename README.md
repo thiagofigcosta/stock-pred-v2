@@ -127,3 +127,9 @@ docker cp $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1):
 ```
 mkdir -p experiment ; tar -zxvf exp.tar.gz -C experiment
 ```
+
+
+#### Running predef hyperparameters on host
+```
+python3 main.py --force-train --eval --plot --plot-eval --plot-dataset --save-plots --start-date 01/01/2016 --end-date 07/05/2021 --test-date 07/01/2021 --enrich-dataset --analyze-metrics --use-all-hyper-on-all-stocks --do-not-test-hyperparams-with-more-fields --stock T --stock GOOG
+```

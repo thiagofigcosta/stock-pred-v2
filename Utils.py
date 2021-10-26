@@ -18,6 +18,7 @@ import random as rd
 from datetime import datetime
 from numpy.random import Generator, MT19937
 import datetime as dt
+from Enums import NodeType,Loss,Metric,Optimizers,Features
 
 class Utils:
 	if os.name == 'nt':
@@ -493,3 +494,54 @@ class Utils:
 			return loss*mean
 		except:
 			return 0
+
+	@staticmethod
+	def parseInputFeaturesForHyperparameters(input_features):
+		if type(input_features) is not list:
+			input_features=[input_features]
+		for i in range(len(input_features)):
+			if isinstance(input_features[i],Features):
+				input_features[i]=input_features[i].toDatasetName()
+		return input_features
+
+	@staticmethod
+	def parseOutputFeatureForHyperparameters(output_feature):
+		if isinstance(output_feature,Features):
+			output_feature=output_feature.toDatasetName()
+		return output_feature
+
+	@staticmethod
+	def parseIndexFeatureForHyperparameters(index_feature):
+		if isinstance(index_feature,Features):
+			index_feature=index_feature.toDatasetName()
+		return index_feature
+
+	@staticmethod
+	def parseMetricsForHyperparameters(metrics):
+		if type(metrics) is not list:
+			metrics=[metrics]
+		for i in range(len(metrics)):
+			if isinstance(metrics[i],Metric):
+				metrics[i]=metrics[i].toKerasName()
+		return metrics
+
+	@staticmethod
+	def parseLossForHyperparameters(loss):
+		if isinstance(loss,Loss):
+			loss=loss.toKerasName()
+		return loss
+
+	@staticmethod
+	def parseNodeTypeForHyperparameters(node_type):
+		if type(node_type) is not list:
+			node_type=[node_type]
+		for i in range(len(node_type)):
+			if isinstance(node_type[i],NodeType):
+				node_type[i]=node_type[i].toKerasName()
+		return node_type
+
+	@staticmethod
+	def parseOptimizerForHyperparameters(optimizer):
+		if isinstance(optimizer,Optimizers):
+			optimizer=optimizer.toKerasName()
+		return optimizer

@@ -12,22 +12,6 @@ from Enums import NodeType,Loss,Metric,Optimizers,Features
 	
 def main(stock,start_date,end_date,test_date,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
 	try:
-		if type(input_features) is not list:
-			input_features=[input_features]
-		for i in range(len(input_features)):
-			if isinstance(input_features[i],Features):
-				input_features[i]=input_features[i].toDatasetName()
-		if isinstance(output_feature,Features):
-			output_feature=output_feature.toDatasetName()
-		if isinstance(index_feature,Features):
-			index_feature=index_feature.toDatasetName()
-		if type(metrics) is not list:
-			metrics=[metrics]
-		for i in range(len(metrics)):
-			if isinstance(metrics[i],Metric):
-				metrics[i]=metrics[i].toKerasName()
-		if isinstance(loss,Loss):
-			loss=loss.toKerasName()
 		if confid is None:
 			hyper_id=Utils.randomUUID()
 		else:
@@ -44,14 +28,14 @@ def main(stock,start_date,end_date,test_date,binary_classifier,input_features,ou
 		patience_epochs_reduce=int(patience_epochs_reduce)
 		reduce_factor=float(reduce_factor)
 		normalize=bool(normalize)
-		optimizer=Optimizers(optimizer).toKerasName()
+		optimizer=Optimizers(optimizer)
 		shuffle=shuffle.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 
 		lstm_layers=int(lstm_layers)
 		for l in range(lstm_layers):
 			layer_sizes[l]=int(layer_sizes[l])
-			activation_funcs[l]=NodeType(activation_funcs[l]).toKerasName()
-			recurrent_activation_funcs[l]=NodeType(recurrent_activation_funcs[l]).toKerasName()
+			activation_funcs[l]=NodeType(activation_funcs[l])
+			recurrent_activation_funcs[l]=NodeType(recurrent_activation_funcs[l])
 			dropouts[l]=float(dropouts[l])
 			recurrent_dropouts[l]=float(recurrent_dropouts[l])
 			bias[l]=bias[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
