@@ -77,7 +77,7 @@ def main(stock,start_date,end_date,test_date,binary_classifier,input_features,ou
 	
 if __name__ == '__main__':
 	feature_group=0 #0-6
-	binary_classifier=True
+	binary_classifier=False
 	stock_name='T'
 	
 	if os.getcwd().endswith('irace') or os.getcwd().endswith('irace/'):

@@ -2,7 +2,7 @@
 
 based on: https://github.com/thiagofigcosta/Stock-Pred-LSTM
 
-## Host
+## Running on Host
 
 ### Virtual environment:
 
@@ -93,7 +93,12 @@ pip install --user tensorflow
 ```
 Install [graphviz](https://graphviz.gitlab.io/download/).
 
-## Docker
+### Running predef hyperparameters on host
+```
+python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --start-date 01/01/2016 --end-date 07/05/2021 --test-date 07/01/2021 --enrich-dataset --analyze-metrics --use-all-hyper-on-all-stocks --do-not-test-hyperparams-with-more-fields --stock T --stock GOOG
+```
+You might want to use --force-train
+## Running with Docker
 
 ### To build image
 
@@ -113,19 +118,33 @@ or
 
 ```
 docker run -e RUN_DEFAULT_EXP='True' -d stock-pred:2.0.0
-docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
 ```
+
 or
 
 ```
 docker run -e RUN_IRACE_NAS='True' -d stock-pred:2.0.0
-docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
 ```
 
-or
+## Running with Docker-Compose
+
+### To build
 
 ```
-docker run -e RUN_GENETIC_NAS='True' -d stock-pred:2.0.0
+docker-compose build
+```
+
+### To Run
+
+```
+docker-compose up -d
+```
+
+## Useful Docker commands
+
+### To follow logs
+
+```
 docker logs --follow $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1)
 ```
 
@@ -148,15 +167,8 @@ docker exec -it $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head 
 docker cp $(docker container ls | grep stock-pred | cut -f 1 -d' ' | head -n 1):/code/exp.tar.gz .
 ```
 
-#### To uncompress
+### To uncompress experiments
 
 ```
 mkdir -p experiment ; tar -zxvf exp.tar.gz -C experiment
 ```
-
-
-#### Running predef hyperparameters on host
-```
-python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --start-date 01/01/2016 --end-date 07/05/2021 --test-date 07/01/2021 --enrich-dataset --analyze-metrics --use-all-hyper-on-all-stocks --do-not-test-hyperparams-with-more-fields --stock T --stock GOOG
-```
-You might want to use --force-train
