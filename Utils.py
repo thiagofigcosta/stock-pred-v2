@@ -475,36 +475,65 @@ class Utils:
 			
 
 	@staticmethod
-	def computeNNFitness(metrics,binary_classifier):
+	def getPlotColorWithIndex(idx,colours_to_avoid=[]):
+		# https://matplotlib.org/stable/gallery/color/named_colors.html
+		background='w'
+		all_colours=['b','g','r','c','y','tab:gray','tab:pink','tab:brown','tab:purple','tab:orange','chartreuse','m','cornflowerblue','darkviolet','crimson','fuchsia','salmon','indigo','k']
+		available_colours=[]
+		for c in all_colours:
+			if c not in colours_to_avoid:
+				available_colours.append(c)
+		return available_colours[(idx%len(available_colours))]
+
+
+	@staticmethod
+	def computeNNFitness(metrics,binary_classifier,section='test'):
 		try:
-			if not binary_classifier:
-				loss=metrics['test']['Model Metrics']['loss']
-				ok_rate=metrics['test']['Class Metrics']['OK_Rate']/100.0
-				try:
-					f1=metrics['test']['Class Metrics']['f1_monark']
-				except:
-					f1=ok_rate
-				try:
-					acc=metrics['test']['Model Metrics']['accuracy']
-				except:
-					acc=ok_rate
-				if loss!=loss or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
-					return 0
-				mean=(3*ok_rate+f1+acc)/5
-				loss=1/loss
-				return loss*mean
-			else:
-				ok_rate=metrics['test']['Class Metrics']['OK_Rate']/100.0
-				try:
-					acc=metrics['test']['Model Metrics']['accuracy']
-				except:
-					acc=ok_rate
-				try:
-					acc2=metrics['test']['Class Metrics']['accuracy']
-				except:
-					acc2=ok_rate
-				mean=(3*ok_rate+acc+acc2)/5
-				return mean
+			metrics_section=metrics
+			if section is not None:
+				metrics_section=metrics[section]
+			mean_squared_error=metrics_section['Model Metrics']['mean_squared_error']
+			ok_rate=metrics_section['Class Metrics']['OK_Rate']/100.0
+			try:
+				f1=metrics_section['Class Metrics']['f1_monark']
+			except:
+				f1=ok_rate
+			try:
+				acc=metrics_section['Class Metrics']['accuracy']
+			except:
+				acc=ok_rate
+			if mean_squared_error!=mean_squared_error or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
+				return 0
+			mean=(3*ok_rate+f1+acc)/5
+			return mean/mean_squared_error
+			# if not binary_classifier:
+			# 	loss=metrics_section['Model Metrics']['loss']
+			# 	ok_rate=metrics_section['Class Metrics']['OK_Rate']/100.0
+			# 	try:
+			# 		f1=metrics_section['Class Metrics']['f1_monark']
+			# 	except:
+			# 		f1=ok_rate
+			# 	try:
+			# 		acc=metrics_section['Model Metrics']['accuracy']
+			# 	except:
+			# 		acc=ok_rate
+			# 	if loss!=loss or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
+			# 		return 0
+			# 	mean=(3*ok_rate+f1+acc)/5
+			# 	loss=1/loss
+			# 	return loss*mean
+			# else:
+			# 	ok_rate=metrics_section['Class Metrics']['OK_Rate']/100.0
+			# 	try:
+			# 		acc=metrics_section['Model Metrics']['accuracy']
+			# 	except:
+			# 		acc=ok_rate
+			# 	try:
+			# 		acc2=metrics_section['Class Metrics']['accuracy']
+			# 	except:
+			# 		acc2=ok_rate
+			# 	mean=(3*ok_rate+acc+acc2)/5
+			# 	return mean
 		except:
 			return 0
 

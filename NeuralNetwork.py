@@ -239,6 +239,9 @@ class NeuralNetwork:
 				last_value_predictions[i].append(pred_val[i][-1])
 				mean_value_predictions[i].append(pred_val[i].mean())
 				fl_mean_value_predictions[i].append((pred_val[i][0]+pred_val[i][-1])/2.0)
+				if self.hyperparameters.binary_classifier: # values must be only 1 or 0
+					mean_value_predictions[i][-1]=1 if mean_value_predictions[i][-1] >=.5 else 0
+					fl_mean_value_predictions[i][-1]=1 if fl_mean_value_predictions[i][-1] >=.5 else 0
 
 		# assign predictions to dataset
 		for data in data_to_eval:
@@ -301,6 +304,7 @@ class NeuralNetwork:
 				class_metrics[key]=value
 			metrics['Strategy Metrics']=strategy_metrics # it was metrics['Strategy Metrics'].append(strategy_metrics) 
 			metrics['Class Metrics']=class_metrics # it was metrics['Class Metrics'].append(class_metrics)
+			metrics['Fitness']=Utils.computeNNFitness(metrics,self.hyperparameters.binary_classifier,section=None)
 			if self.verbose:
 				print('Metrics {}:'.format(eval_type_name))
 				Utils.printDict(model_metrics,'Model metrics')
@@ -327,11 +331,21 @@ class NeuralNetwork:
 		# plot data
 		if plot:
 			for i in range(self.hyperparameters.amount_companies):
-				plt.plot(dates,real_values[i], label='Real')
-				plt.plot(dates[self.hyperparameters.backwards_samples-1:],first_value_predictions[i], color='r', label='Predicted F')
-				plt.plot(dates[self.hyperparameters.backwards_samples-1:],last_value_predictions[i], color='g', label='Predicted L')
-				plt.plot(dates[self.hyperparameters.backwards_samples-1:],mean_value_predictions[i], color='c', label='Predicted Mean')
-				plt.plot(dates[self.hyperparameters.backwards_samples-1:],fl_mean_value_predictions[i], color='k', label='Predicted FL Mean')
+				if self.hyperparameters.binary_classifier:
+					plt.bar(dates,real_values[i],width=1,color='g',alpha=.8, label='Real - Ups',zorder=0)
+					plt.bar(dates,[1 if rv_el==0 else 0 for rv_el in real_values[i]],width=1,color='r',alpha=.8, label='Real - Downs',zorder=0)
+					amount_of_bars=4
+					real_free_space_ratio=.1
+					plt.bar(dates[self.hyperparameters.backwards_samples-1:],[ (1-real_free_space_ratio)/amount_of_bars if real_values[i][self.hyperparameters.backwards_samples-1:][x]==el else 0 for x,el in enumerate(first_value_predictions[i])],bottom=0,width=1,linewidth=0,edgecolor='k', color=Utils.getPlotColorWithIndex(0,colours_to_avoid=['r','g']), label='Pred F macthed')
+					plt.bar(dates[self.hyperparameters.backwards_samples-1:],[ (1-real_free_space_ratio)/amount_of_bars if real_values[i][self.hyperparameters.backwards_samples-1:][x]==el else 0 for x,el in enumerate(last_value_predictions[i])],bottom=1*(1-real_free_space_ratio)/amount_of_bars,width=1,linewidth=0,edgecolor='k', color=Utils.getPlotColorWithIndex(1,colours_to_avoid=['r','g']), label='Pred L macthed')
+					plt.bar(dates[self.hyperparameters.backwards_samples-1:],[ (1-real_free_space_ratio)/amount_of_bars if real_values[i][self.hyperparameters.backwards_samples-1:][x]==el else 0 for x,el in enumerate(mean_value_predictions[i])],bottom=2*(1-real_free_space_ratio)/amount_of_bars,width=1,linewidth=0,edgecolor='k', color=Utils.getPlotColorWithIndex(2,colours_to_avoid=['r','g']), label='Pred Mean macthed')
+					plt.bar(dates[self.hyperparameters.backwards_samples-1:],[ (1-real_free_space_ratio)/amount_of_bars if real_values[i][self.hyperparameters.backwards_samples-1:][x]==el else 0 for x,el in enumerate(fl_mean_value_predictions[i])],bottom=3*(1-real_free_space_ratio)/amount_of_bars,width=1,linewidth=0,edgecolor='k', color=Utils.getPlotColorWithIndex(3,colours_to_avoid=['r','g']), label='Pred FL Mean macthed')
+				else:
+					plt.plot(dates,real_values[i], color='b',label='Real')
+					plt.plot(dates[self.hyperparameters.backwards_samples-1:],first_value_predictions[i], color=Utils.getPlotColorWithIndex(0,colours_to_avoid=['b']), label='Predicted F')
+					plt.plot(dates[self.hyperparameters.backwards_samples-1:],last_value_predictions[i], color=Utils.getPlotColorWithIndex(1,colours_to_avoid=['b']), label='Predicted L')
+					plt.plot(dates[self.hyperparameters.backwards_samples-1:],mean_value_predictions[i], color=Utils.getPlotColorWithIndex(2,colours_to_avoid=['b']), label='Predicted Mean')
+					plt.plot(dates[self.hyperparameters.backwards_samples-1:],fl_mean_value_predictions[i], color=Utils.getPlotColorWithIndex(3,colours_to_avoid=['b']), label='Predicted FL Mean')
 				if self.hyperparameters.amount_companies>1:
 					plt.title('Stock values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 				else:
@@ -418,9 +432,18 @@ class NeuralNetwork:
 			# plot verification predictions
 			if plot:
 				for i in range(self.hyperparameters.amount_companies):
-					plt.plot(verification_pred_dates[:len(verification_real_values[i])],verification_real_values[i], '-o', label='Real')
-					for j in reversed(range(self.hyperparameters.forward_samples)):
-						plt.plot(verification_pred_dates[:len(verification_all_predictions[i][j])],verification_all_predictions[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j), zorder=j)
+					if self.hyperparameters.binary_classifier:
+						plt.bar(verification_pred_dates[:len(verification_real_values[i])],verification_real_values[i],width=1,color='g',alpha=.8, label='Real - Ups',zorder=0)
+						plt.bar(verification_pred_dates[:len(verification_real_values[i])],[1 if rv_el==0 else 0 for rv_el in verification_real_values[i]],width=1,color='r',alpha=.8, label='Real downs',zorder=0)
+						real_free_space_ratio=.2
+						for j in reversed(range(self.hyperparameters.forward_samples)):
+							j_crescent=self.hyperparameters.forward_samples-j
+							plt.bar(verification_pred_dates[:len(verification_all_predictions[i][j])],[ (1-real_free_space_ratio)/self.hyperparameters.forward_samples if verification_real_values[i][x]==el else 0 for x,el in enumerate(verification_all_predictions[i][j]) ],color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['g','r']),width=0.7,linewidth=0,edgecolor='k',bottom=(1-real_free_space_ratio)*(j/self.hyperparameters.forward_samples), label='Pred {} matched'.format(j_crescent), zorder=j)
+					else:
+						plt.plot(verification_pred_dates[:len(verification_real_values[i])],verification_real_values[i], '-o', color='b',label='Real')
+						for j in reversed(range(self.hyperparameters.forward_samples)):
+							j_crescent=self.hyperparameters.forward_samples-j
+							plt.plot(verification_pred_dates[:len(verification_all_predictions[i][j])],verification_all_predictions[i][j], '-o',color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['b']), label='Prediction {}'.format(j_crescent), zorder=j)
 					if self.hyperparameters.amount_companies>1:
 						plt.title('Pred verification values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 					else:
@@ -494,12 +517,22 @@ class NeuralNetwork:
 		if plot:
 			amount_of_previous_data_points=5
 			for i in range(self.hyperparameters.amount_companies):
-				if amount_of_previous_data_points>0:
-					plt.plot(dates[-amount_of_previous_data_points:],real_values[i][-amount_of_previous_data_points:], '-o', label='Last real values')
-				for j in reversed(range(self.hyperparameters.forward_samples)):
+				if self.hyperparameters.binary_classifier:
 					if amount_of_previous_data_points>0:
-						plt.plot([dates[-1],pred_dates[0]],[real_values[i][-1],pred_values[i][j][0]], color='k', zorder=-666, linewidth=0.5)
-					plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o', label='Prediction {}'.format(self.hyperparameters.forward_samples-j), zorder=j)
+						plt.bar(dates[-amount_of_previous_data_points:],real_values[i][-amount_of_previous_data_points:],width=1,color='g',alpha=0.8, label='Last Real - Ups',zorder=0)
+						plt.bar(dates[-amount_of_previous_data_points:],[1 if rv_el==0 else 0 for rv_el in real_values[i][-amount_of_previous_data_points:]],width=1,color='r',alpha=0.8, label='Last Real downs',zorder=0)
+					real_free_space_ratio=0
+					for j in reversed(range(self.hyperparameters.forward_samples)):
+						j_crescent=self.hyperparameters.forward_samples-j
+						plt.bar(pred_dates[:len(pred_values[i][j])],[ (1-real_free_space_ratio)/self.hyperparameters.forward_samples if el>0 else 0 for el in pred_values[i][j] ],color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['r','g']),width=0.7,linewidth=0,edgecolor='k',bottom=(1-real_free_space_ratio)*(j/self.hyperparameters.forward_samples),label='Prediction {}'.format(j_crescent), zorder=j)
+				else:
+					if amount_of_previous_data_points>0:
+						plt.plot(dates[-amount_of_previous_data_points:],real_values[i][-amount_of_previous_data_points:], '-o',color='b', label='Last real values')
+					for j in reversed(range(self.hyperparameters.forward_samples)):
+						j_crescent=self.hyperparameters.forward_samples-j
+						if amount_of_previous_data_points>0:
+							plt.plot([dates[-1],pred_dates[0]],[real_values[i][-1],pred_values[i][j][0]], color='k', zorder=-666, linewidth=0.5)
+						plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o',color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['b','k']), label='Prediction {}'.format(j_crescent), zorder=j)
 				if self.hyperparameters.amount_companies>1:
 					plt.title('Pred future values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 				else:

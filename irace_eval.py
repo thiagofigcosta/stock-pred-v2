@@ -10,7 +10,7 @@ from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
 from Enums import NodeType,Loss,Metric,Optimizers,Features
 	
-def main(stock,start_date,end_date,test_date,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
+def main(stock,start_date,end_date,test_date,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,backwards_samples,forward_samples,max_epochs,stateful,batch_size,use_dense_on_output,patience_epochs_stop,patience_epochs_reduce,reduce_factor,optimizer,shuffle,lstm_layers,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,datfile,confid=None):
 	try:
 		if confid is None:
 			hyper_id=Utils.randomUUID()
@@ -42,7 +42,7 @@ def main(stock,start_date,end_date,test_date,binary_classifier,input_features,ou
 			unit_forget_bias[l]=unit_forget_bias[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 			go_backwards[l]=go_backwards[l].lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 
-		hyperparameters=Hyperparameters(name=hyper_id,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropouts,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_funcs,recurrent_activation_functions=recurrent_activation_funcs,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropouts,binary_classifier=binary_classifier)
+		hyperparameters=Hyperparameters(name=hyper_id,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropouts,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_funcs,recurrent_activation_functions=recurrent_activation_funcs,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropouts,binary_classifier=binary_classifier)
 
 		never_crawl=os.getenv('NEVER_CRAWL',default='False')
 		never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
@@ -94,12 +94,12 @@ if __name__ == '__main__':
 	if binary_classifier:
 		input_features=[Features.UP]+input_features[feature_group]
 		output_feature=Features.UP
-		metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+input_features[feature_group]
 		output_feature=Features.CLOSE
-		metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
 		loss='mean_squared_error'
 
 	ap = argparse.ArgumentParser()
@@ -159,5 +159,5 @@ if __name__ == '__main__':
 		unit_forget_bias.append(args_dict['ufb-{}'.format(l)])
 		go_backwards.append(args_dict['gb-{}'.format(l)])
 
-	main(stock_name,start_date,end_date,test_date,binary_classifier,input_features,output_feature,index_feature,metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bts,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile,args.confid)
+	main(stock_name,start_date,end_date,test_date,binary_classifier,input_features,output_feature,index_feature,model_metrics,loss,normalize,args.bs,args.fs,args.me,args.st,args.bts,args.do,args.pes,args.per,args.rf,args.op,args.sh,args.lrs,layer_sizes,activation_funcs,recurrent_activation_funcs,dropouts,recurrent_dropouts,bias,unit_forget_bias,go_backwards,args.datfile,args.confid)
 	

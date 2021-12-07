@@ -14,41 +14,10 @@ from Hyperparameters import Hyperparameters
 from Utils import Utils
 
 def getPredefHyperparams():
-	MAX_EPOCHS=100
 	hyperparameters=[]
 
-	ADD_BINARY_CROSSEN_HYPER=False
-	if ADD_BINARY_CROSSEN_HYPER:
-		binary_classifier=True
-		input_features=['up']
-		output_feature='up'
-		index_feature='Date'
-		backwards_samples=21
-		forward_samples=7
-		lstm_layers=2
-		max_epochs=MAX_EPOCHS
-		patience_epochs_stop=0
-		batch_size=8
-		stateful=False
-		dropout_values=[0.5,0.5]
-		layer_sizes=[50,50]
-		normalize=False
-		optimizer='rmsprop'
-		model_metrics=['accuracy','mean_squared_error']
-		loss='categorical_crossentropy'
-		train_percent=.8
-		val_percent=.2
-		amount_companies=1
-		shuffle=False
-		activation_functions='sigmoid'
-		recurrent_activation_functions='hard_sigmoid'
-		bias=[False,False]
-		use_dense_on_output=True
-		unit_forget_bias=True
-		go_backwards=False
-		recurrent_dropout_values=[0.01,0.01]
-		hyperparameters.append(Hyperparameters(binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
-
+	# Forecast
+	name='Subject 1'
 	feature_group=0
 	binary_classifier=False
 	train_percent=.8
@@ -57,38 +26,253 @@ def getPredefHyperparams():
 	index_feature='Date'
 	normalize=True
 	if binary_classifier:
-		input_features=[Features.UP]+input_features[feature_group]
+		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.UP
-		metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.CLOSE
 		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
 		loss='mean_squared_error'
-	# irace
-	backwards_samples=39
-	forward_samples=11
-	max_epochs=2795
-	stateful=False
-	batch_size=106
-	use_dense_on_output=True
-	patience_epochs_stop=1304
-	patience_epochs_reduce=945
-	reduce_factor=0.02062
-	optimizer=Optimizers.RMSPROP # Optimizers.ADAM
+	# fixed
 	shuffle=False
-	lstm_layers=2
-	layer_sizes=[196,165]
-	activation_functions=[NodeType.RELU,NodeType.SIGMOID]
-	recurrent_activation_functions=[NodeType.SIGMOID,NodeType.RELU]
-	dropout_values=[0.09278,0.05087]
-	recurrent_dropout_values=[0.11975,0.10689]
-	bias=[True,False]
-	unit_forget_bias=[True,True]
-	go_backwards=[True,False]
-	hyperparameters.append(Hyperparameters(binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+	# irace
+	backwards_samples=16
+	forward_samples=11
+	lstm_layers=1
+	max_epochs=4889
+	patience_epochs_stop=1525
+	patience_epochs_reduce=539
+	reduce_factor=0.01259
+	batch_size=122
+	stateful=False
+	optimizer=Optimizers.RMSPROP # Optimizers.ADAM
+	use_dense_on_output=False
+	activation_functions=[NodeType.SIGMOID]
+	recurrent_activation_functions=[NodeType.TANH]
+	layer_sizes=[89]
+	dropout_values=[0.03741]
+	recurrent_dropout_values=[0.24559]
+	bias=[False]
+	unit_forget_bias=[True]
+	go_backwards=[True]
+	hyperparameters.append(Hyperparameters(name=name,binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+
+
+	name='Subject 2'
+	feature_group=0
+	binary_classifier=False
+	train_percent=.8
+	val_percent=.3
+	amount_companies=1
+	index_feature='Date'
+	normalize=True
+	if binary_classifier:
+		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.UP
+		model_metrics=['accuracy','mean_squared_error']
+		loss='categorical_crossentropy'
+	else:
+		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.CLOSE
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		loss='mean_squared_error'
+	# fixed
+	shuffle=False
+	# irace
+	backwards_samples=31
+	forward_samples=7
+	lstm_layers=1
+	max_epochs=3183
+	patience_epochs_stop=1827
+	patience_epochs_reduce=228
+	reduce_factor=0.05265
+	batch_size=46
+	stateful=False
+	optimizer=Optimizers.ADAM # Optimizers.RMSPROP
+	use_dense_on_output=False
+	activation_functions=[NodeType.SIGMOID]
+	recurrent_activation_functions=[NodeType.TANH]
+	layer_sizes=[67]
+	dropout_values=[0.24864]
+	recurrent_dropout_values=[0.15223]
+	bias=[True]
+	unit_forget_bias=[True]
+	go_backwards=[False]
+	hyperparameters.append(Hyperparameters(name=name,binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
 	
+	name='Subject 3'
+	feature_group=0
+	binary_classifier=False
+	train_percent=.8
+	val_percent=.3
+	amount_companies=1
+	index_feature='Date'
+	normalize=True
+	if binary_classifier:
+		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.UP
+		model_metrics=['accuracy','mean_squared_error']
+		loss='categorical_crossentropy'
+	else:
+		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.CLOSE
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		loss='mean_squared_error'
+	# fixed
+	shuffle=False
+	# irace
+	backwards_samples=38
+	forward_samples=10
+	lstm_layers=1
+	max_epochs=3002
+	patience_epochs_stop=853
+	patience_epochs_reduce=73
+	reduce_factor=0.06082
+	batch_size=112
+	stateful=False
+	optimizer=Optimizers.ADAM # Optimizers.RMSPROP
+	use_dense_on_output=False
+	activation_functions=[NodeType.TANH]
+	recurrent_activation_functions=[NodeType.RELU]
+	layer_sizes=[164]
+	dropout_values=[0.23404]
+	recurrent_dropout_values=[0.00155]
+	bias=[True]
+	unit_forget_bias=[True]
+	go_backwards=[False]
+	hyperparameters.append(Hyperparameters(name=name,binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+
+
+	# Binary
+	name='Subject 1'
+	feature_group=0
+	binary_classifier=True
+	train_percent=.8
+	val_percent=.3
+	amount_companies=1
+	index_feature='Date'
+	normalize=True
+	if binary_classifier:
+		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.UP
+		model_metrics=['accuracy','mean_squared_error']
+		loss='categorical_crossentropy'
+	else:
+		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.CLOSE
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		loss='mean_squared_error'
+	# fixed
+	shuffle=False
+	# irace
+	backwards_samples=37
+	forward_samples=7
+	lstm_layers=1
+	max_epochs=4346
+	patience_epochs_stop=3574
+	patience_epochs_reduce=606
+	reduce_factor=0.09476
+	batch_size=10
+	stateful=True
+	optimizer=Optimizers.ADAM # Optimizers.RMSPROP
+	use_dense_on_output=True
+	activation_functions=[NodeType.SIGMOID]
+	recurrent_activation_functions=[NodeType.TANH]
+	layer_sizes=[125]
+	dropout_values=[0.19655]
+	recurrent_dropout_values=[0.29698]
+	bias=[False]
+	unit_forget_bias=[False]
+	go_backwards=[False]
+	hyperparameters.append(Hyperparameters(name=name,binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+
+	name='Subject 2'
+	feature_group=0
+	binary_classifier=True
+	train_percent=.8
+	val_percent=.3
+	amount_companies=1
+	index_feature='Date'
+	normalize=True
+	if binary_classifier:
+		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.UP
+		model_metrics=['accuracy','mean_squared_error']
+		loss='categorical_crossentropy'
+	else:
+		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.CLOSE
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		loss='mean_squared_error'
+	# fixed
+	shuffle=False
+	# irace
+	backwards_samples=5
+	forward_samples=7
+	lstm_layers=2
+	max_epochs=2800
+	patience_epochs_stop=692
+	patience_epochs_reduce=634
+	reduce_factor=0.12503
+	batch_size=102
+	stateful=True
+	optimizer=Optimizers.ADAM # Optimizers.RMSPROP
+	use_dense_on_output=True
+	activation_functions=[NodeType.LINEAR,NodeType.LINEAR]
+	recurrent_activation_functions=[NodeType.LINEAR,NodeType.HARD_SIGMOID]
+	layer_sizes=[95, 77]
+	dropout_values=[0.16891, 0.01028]
+	recurrent_dropout_values=[0.24156, 0.03735]
+	bias=[True,False]
+	unit_forget_bias=[False,True]
+	go_backwards=[True,False]
+	hyperparameters.append(Hyperparameters(name=name,binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+
+
+	name='Subject 3'
+	feature_group=0
+	binary_classifier=True
+	train_percent=.8
+	val_percent=.3
+	amount_companies=1
+	index_feature='Date'
+	normalize=True
+	if binary_classifier:
+		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.UP
+		model_metrics=['accuracy','mean_squared_error']
+		loss='categorical_crossentropy'
+	else:
+		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
+		output_feature=Features.CLOSE
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		loss='mean_squared_error'
+	# fixed
+	shuffle=False
+	# irace
+	backwards_samples=38
+	forward_samples=7
+	lstm_layers=4
+	max_epochs=4116
+	patience_epochs_stop=2418
+	patience_epochs_reduce=869
+	reduce_factor=0.09956
+	batch_size=58
+	stateful=True
+	optimizer=Optimizers.RMSPROP # Optimizers.ADAM
+	use_dense_on_output=True
+	activation_functions=[NodeType.RELU,NodeType.EXPONENTIAL,NodeType.SIGMOID,NodeType.RELU]
+	recurrent_activation_functions=[NodeType.SIGMOID,NodeType.TANH,NodeType.LINEAR,NodeType.SIGMOID]
+	layer_sizes=[48, 30, 194, 72]
+	dropout_values=[0.06482, 0.18694, 0.19006, 0.27753]
+	recurrent_dropout_values=[0.13098, 0.25548, 0.24709, 0.14463]
+	bias=[False,True,False,False]
+	unit_forget_bias=[False,False,False,True]
+	go_backwards=[False,False,False,False]
+	hyperparameters.append(Hyperparameters(name=name,binary_classifier=binary_classifier,input_features=input_features,output_feature=output_feature,index_feature=index_feature,backwards_samples=backwards_samples,forward_samples=forward_samples,lstm_layers=lstm_layers,max_epochs=max_epochs,patience_epochs_stop=patience_epochs_stop,patience_epochs_reduce=patience_epochs_reduce,reduce_factor=reduce_factor,batch_size=batch_size,stateful=stateful,dropout_values=dropout_values,layer_sizes=layer_sizes,normalize=normalize,optimizer=optimizer,model_metrics=model_metrics,loss=loss,train_percent=train_percent,val_percent=val_percent,amount_companies=amount_companies,shuffle=shuffle,activation_functions=activation_functions,recurrent_activation_functions=recurrent_activation_functions,bias=bias,use_dense_on_output=use_dense_on_output,unit_forget_bias=unit_forget_bias,go_backwards=go_backwards,recurrent_dropout_values=recurrent_dropout_values))
+
 	return hyperparameters
 
 
@@ -146,7 +330,10 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 		if all_hyper_for_all_stocks:
 			hyperparameters[stock]=[]
 			for hyper in hyperparameters_tmp:
-				hyper.setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
+				if hyper.name != '':
+					hyper.setName('{} - from: {} to: {}'.format(hyper.name,start_date,end_date))
+				else:
+					hyper.setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
 				hyperparameters[stock].append(hyper.copy())
 				if add_more_fields_to_hyper:
 					for new_input_field in new_input_fields:
@@ -155,7 +342,10 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 						new_hyperparameters.genAndSetUuid()
 						hyperparameters[stock].append(new_hyperparameters)
 		else:
-			hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
+			if hyperparameters_tmp[i].name != '':
+				hyperparameters_tmp[i].setName('{} - from: {} to: {}'.format(hyperparameters_tmp[i].name,start_date,end_date))
+			else:
+				hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
 			hyperparameters[stock]=[hyperparameters_tmp[i]]
 			if add_more_fields_to_hyper:
 				for new_input_field in new_input_fields:
