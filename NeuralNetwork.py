@@ -304,7 +304,6 @@ class NeuralNetwork:
 				class_metrics[key]=value
 			metrics['Strategy Metrics']=strategy_metrics # it was metrics['Strategy Metrics'].append(strategy_metrics) 
 			metrics['Class Metrics']=class_metrics # it was metrics['Class Metrics'].append(class_metrics)
-			metrics['Fitness']=Utils.computeNNFitness(metrics,self.hyperparameters.binary_classifier,section=None)
 			if self.verbose:
 				print('Metrics {}:'.format(eval_type_name))
 				Utils.printDict(model_metrics,'Model metrics')
@@ -480,6 +479,9 @@ class NeuralNetwork:
 						else:
 							plt.show(block=False)
 							plt.figure()
+
+		metrics['Fitness']=Utils.computeNNFitness(metrics,self.hyperparameters.binary_classifier,section=None)
+		print('Fitness',metrics['Fitness'])
 
 		# print future predictions
 		if print_prediction:

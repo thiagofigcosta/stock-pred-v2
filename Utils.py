@@ -493,47 +493,38 @@ class Utils:
 			if section is not None:
 				metrics_section=metrics[section]
 			mean_squared_error=metrics_section['Model Metrics']['mean_squared_error']
-			ok_rate=metrics_section['Class Metrics']['OK_Rate']/100.0
+			backup_value=None
+			try:
+				ok_rate=metrics_section['Class Metrics']['OK_Rate']/100.0
+				if ok_rate==ok_rate and ok_rate is not None:
+					backup_value=ok_rate
+			except:
+				ok_rate=None
 			try:
 				f1=metrics_section['Class Metrics']['f1_monark']
+				if f1==f1 and f1 is not None:
+					backup_value=f1
 			except:
-				f1=ok_rate
+				f1=None
 			try:
 				acc=metrics_section['Class Metrics']['accuracy']
+				if acc==acc and acc is not None:
+					backup_value=acc
 			except:
-				acc=ok_rate
-			if mean_squared_error!=mean_squared_error or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
-				return 0
+				acc=None
+
+			if acc!=acc or acc is None:
+				acc=backup_value
+			if f1!=f1 or f1 is None:
+				f1=backup_value
+			if ok_rate!=ok_rate or ok_rate is None:
+				ok_rate=backup_value
+
+			if mean_squared_error!=mean_squared_error or ok_rate is None or f1 is None or acc is None:
+				raise Exception('Not enough valid values')
+				
 			mean=(3*ok_rate+f1+acc)/5
 			return mean/mean_squared_error
-			# if not binary_classifier:
-			# 	loss=metrics_section['Model Metrics']['loss']
-			# 	ok_rate=metrics_section['Class Metrics']['OK_Rate']/100.0
-			# 	try:
-			# 		f1=metrics_section['Class Metrics']['f1_monark']
-			# 	except:
-			# 		f1=ok_rate
-			# 	try:
-			# 		acc=metrics_section['Model Metrics']['accuracy']
-			# 	except:
-			# 		acc=ok_rate
-			# 	if loss!=loss or ok_rate!=ok_rate or f1!=f1 or acc!=acc:
-			# 		return 0
-			# 	mean=(3*ok_rate+f1+acc)/5
-			# 	loss=1/loss
-			# 	return loss*mean
-			# else:
-			# 	ok_rate=metrics_section['Class Metrics']['OK_Rate']/100.0
-			# 	try:
-			# 		acc=metrics_section['Model Metrics']['accuracy']
-			# 	except:
-			# 		acc=ok_rate
-			# 	try:
-			# 		acc2=metrics_section['Class Metrics']['accuracy']
-			# 	except:
-			# 		acc2=ok_rate
-			# 	mean=(3*ok_rate+acc+acc2)/5
-			# 	return mean
 		except:
 			return 0
 
