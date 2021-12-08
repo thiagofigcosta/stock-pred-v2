@@ -627,12 +627,23 @@ class Dataset:
 		raw_values=self.data.getValues(degree=0,only_main_value=False,no_simplification=True)
 		features=len(raw_values[0][0])
 		processed_values=[[[] for _ in range(features)] for _ in range(self.companies)]
+		features_with_only_zeros={}
 		for entry in raw_values:
 			for i,company in enumerate(entry):
 				for j,feature in enumerate(company):
 					if normalize:
-						feature/=self.normalization_params[j] # throws exception if normalization_params is not set
+						if self.normalization_params[j] != 0: # throws exception if normalization_params is not set
+							feature/=self.normalization_params[j] 
+						else: # every feature entry can be zero
+							if j not in features_with_only_zeros:
+								features_with_only_zeros[j]=False
+							if feature!=0:
+								features_with_only_zeros[j]=True
 					processed_values[i][j].append(feature)
+		if len(features_with_only_zeros)>0:
+			for _,v in features_with_only_zeros.items():
+				if v:
+					raise Exception('Could not normalize dataset at feature position: {}'.format(j))
 		return processed_values				
 		
 	def __init__(self,name,dataset_names_array=[]):
