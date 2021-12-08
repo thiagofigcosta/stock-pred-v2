@@ -439,12 +439,24 @@ class Dataset:
 		return start_index,X,Y
 
 	def normalizeXDatasetEntry(self,x):
+		features_with_only_zeros={}
 		for a,el_1 in enumerate(x):
 			if type(el_1) in (list,np.ndarray):
 				for b,el_2 in enumerate(el_1):
 					if type(el_2) in (list,np.ndarray):
 						for c,el_3 in enumerate(el_2):
-							x[a][b][c]=el_3/float(self.normalization_params[c])
+							if self.normalization_params[c]!=0:
+								x[a][b][c]=el_3/float(self.normalization_params[c])
+							else: # every feature entry can be zero
+								x[a][b][c]=el_3
+								if c not in features_with_only_zeros:
+									features_with_only_zeros[c]=False
+								if el_3!=0:
+									features_with_only_zeros[j]=True
+		if len(features_with_only_zeros)>0:
+			for k,v in features_with_only_zeros.items():
+				if v:
+					raise Exception('Could not normalize dataset at feature position: {}'.format(k))
 		return x
 
 
@@ -452,7 +464,12 @@ class Dataset:
 		for a,el_1 in enumerate(y):
 			if type(el_1) in (list,np.ndarray):
 				for b,el_2 in enumerate(el_1):
-					y[a][b]=el_2/float(self.normalization_params[0])
+					if self.normalization_params[0]!=0:
+						y[a][b]=el_2/float(self.normalization_params[0])
+					else:
+						y[a][b]=el_2
+						if el_2!=0:
+							raise Exception('Could not normalize dataset at output feature (pos 0)')
 		return y
 
 	def setNormalizationMethod(self,normalization=Normalization.DONT_NORMALIZE,external_maxes=None):
@@ -641,9 +658,9 @@ class Dataset:
 								features_with_only_zeros[j]=True
 					processed_values[i][j].append(feature)
 		if len(features_with_only_zeros)>0:
-			for _,v in features_with_only_zeros.items():
+			for k,v in features_with_only_zeros.items():
 				if v:
-					raise Exception('Could not normalize dataset at feature position: {}'.format(j))
+					raise Exception('Could not normalize dataset at feature position: {}'.format(k))
 		return processed_values				
 		
 	def __init__(self,name,dataset_names_array=[]):
