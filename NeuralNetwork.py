@@ -605,10 +605,19 @@ class NeuralNetwork:
 		output_activation=Hyperparameters.REGRESSION_OUTPUT_ACTIVATION_FUNCTION  # activation=None = 'linear'
 		if self.hyperparameters.binary_classifier:
 			output_activation=Hyperparameters.BINARY_OUTPUT_ACTIVATION_FUNCTION
-		if self.hyperparameters.use_dense_on_output:
-			model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation=output_activation))
-		else:
-			model.add(LSTM(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies, activation=output_activation))
+		if self.hyperparameters.lstm_layers > 0:
+			if self.hyperparameters.use_dense_on_output:
+				model.add(Dense(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,activation=output_activation))
+			else:
+				model.add(LSTM(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies, activation=output_activation,time_major=False))
+		else: # No dense layer for hidden_lstm_layers=0
+			input_shape=(self.hyperparameters.backwards_samples,self.hyperparameters.amount_companies*input_features_size)
+			batch_size=self.hyperparameters.batch_size
+			if self.hyperparameters.batch_size==0 or True: # TODO remove this workaround, for feature we should copy the weights of the trained model to a new model with batch_size==1, to train with a batch size and predict with any
+				batch_size=None
+			batch_input_shape=tuple([batch_size])+input_shape
+			model.add(LSTM(self.hyperparameters.forward_samples*self.hyperparameters.amount_companies,batch_input_shape=batch_input_shape, activation=output_activation,time_major=False))
+		
 		if self.verbose:
 			model_summary_lines=[]
 			model.summary(print_fn=lambda x: model_summary_lines.append(x))
