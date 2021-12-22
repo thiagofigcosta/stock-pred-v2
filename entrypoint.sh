@@ -16,6 +16,9 @@ elif [[ "$RUN_IRACE_NAS" = [tT][rR][uU][eE] ]]; then
 elif [[ "$RUN_GENETIC_NAS" = [tT][rR][uU][eE] ]]; then
     python nas_genetic.py | tee log.txt
     echo -e "\n\n\nDONE\n" | tee -a log.txt
+elif [[ "$RUN_PYMOO" = [tT][rR][uU][eE] ]]; then
+    python nas_pymoo.py | tee log.txt
+    echo -e "\n\n\nDONE\n" | tee -a log.txt
 fi
 
 if [[ "$COMPRESS_AFTER_EXP" = [tT][rR][uU][eE] ]]; then

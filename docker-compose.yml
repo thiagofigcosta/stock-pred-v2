@@ -7,8 +7,8 @@ services:
             dockerfile: Dockerfile
         restart: always
         environment:
-          NEVER_CRAWL: "true"
-          RUN_IRACE_NAS: "true"
+          NEVER_CRAWL: "false"
+          RUN_PYMOO: "true"
           COMPRESS_AFTER_EXP: "true"
         volumes:
           - ./datasets:/code/datasets
