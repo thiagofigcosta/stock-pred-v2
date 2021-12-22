@@ -28,7 +28,9 @@ import tensorflow.keras.backend as K # import keras.backend as K
 from matplotlib import pyplot as plt
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 plt.rcParams.update({'figure.max_open_warning': 0})
+import warnings
 
+warnings.filterwarnings('ignore') # turn off warnings for metrics
 class NeuralNetwork:
 	MODELS_PATH='saved_models/'
 	BACKUP_MODELS_PATH='saved_models/backups/'
@@ -36,6 +38,12 @@ class NeuralNetwork:
 	SAVED_PLOTS_COUNTER=0
 	SAVED_PLOTS_ID=rd.randint(0, 666666)
 	CLIP_NORM_INSTEAD_OF_VALUE=False
+	FIGURE_EXTRA_WIDTH_RATIO_FOR_HUGE_LEGEND=.3
+	FIGURE_WIDTH=1920
+	FIGURE_HEIGHT=1080
+	FIGURE_DPI=150
+	FIGURE_LEGEND_X_ANCHOR=1.0
+	FIGURE_LEGEND_Y_ANCHOR=0.5
 
 	def __init__(self,hyperparameters=None,hyperparameters_path=None,stock_name='undefined',verbose=False):
 		if hyperparameters is not None and type(hyperparameters)!=Hyperparameters:
@@ -57,7 +65,11 @@ class NeuralNetwork:
 			self.filenames={'hyperparameters':hyperparameters_path}
 		else:
 			self.setFilenames()
-			
+
+	@staticmethod
+	def resizeFigure(mng):
+		mng.resize(NeuralNetwork.FIGURE_WIDTH, NeuralNetwork.FIGURE_HEIGHT)
+
 	@staticmethod
 	def getUuidLabel(uuid, max_uuid_length=10):
 		label=uuid[:max_uuid_length]
@@ -314,18 +326,21 @@ class NeuralNetwork:
 		if plot_training:
 			plt.plot(self.history['loss'], label='loss')
 			plt.plot(self.history['val_loss'], label='val_loss')
-			plt.legend(loc='best')
+			plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 			plt.title('Training loss of {}'.format(self.data.dataset.name))
-			plt.get_current_fig_manager().canvas.set_window_title('Training loss of {}'.format(self.data.dataset.name))
+			plt.tight_layout(rect=[0, 0, 1.1, 1])
+			mng=plt.get_current_fig_manager()
+			mng.canvas.set_window_title('Training loss of {}'.format(self.data.dataset.name))
+			NeuralNetwork.resizeFigure(mng)
 			if save_plots:
-				plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_trainning_loss'.format(self.data.dataset.name),hyperparameters=self.hyperparameters))
-				plt.figure()
+				plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_trainning_loss'.format(self.data.dataset.name),hyperparameters=self.hyperparameters), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+				plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 			else:
 				if blocking_plots:
 					plt.show()
 				else:
 					plt.show(block=False)
-					plt.figure()
+					plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 		# plot data
 		if plot:
@@ -349,17 +364,20 @@ class NeuralNetwork:
 					plt.title('Stock values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 				else:
 					plt.title('Stock values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
-				plt.legend(loc='best')
-				plt.get_current_fig_manager().canvas.set_window_title('Stock {} values of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
+				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
+				plt.tight_layout(rect=[0, 0, 1.1, 1])
+				mng=plt.get_current_fig_manager()
+				mng.canvas.set_window_title('Stock {} values of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
+				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_stock_values_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
-					plt.figure()
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_stock_values_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+					plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 				else:
 					if blocking_plots:
 						plt.show()
 					else:
 						plt.show(block=False)
-						plt.figure()
+						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 		if eval_type_name == 'test':
 			ok_rates=[[] for _ in range(self.hyperparameters.amount_companies)]
@@ -442,24 +460,26 @@ class NeuralNetwork:
 						plt.plot(verification_pred_dates[:len(verification_real_values[i])],verification_real_values[i], '-o', color='b',label='Real')
 						for j in reversed(range(self.hyperparameters.forward_samples)):
 							j_crescent=self.hyperparameters.forward_samples-j
-							plt.plot(verification_pred_dates[:len(verification_all_predictions[i][j])],verification_all_predictions[i][j], '-o',color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['b']), label='Prediction {}'.format(j_crescent), zorder=j)
+							plt.plot(verification_pred_dates[:len(verification_all_predictions[i][j])],verification_all_predictions[i][j], '-o',color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['b']), label='Pred {}'.format(j_crescent), zorder=j)
 					if self.hyperparameters.amount_companies>1:
 						plt.title('Pred verification values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 					else:
 						plt.title('Pred verification values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
-					plt.legend(loc='best')
+					plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 					plt.xticks(verification_pred_dates,rotation=30,ha='right')
-					plt.tight_layout()
-					plt.get_current_fig_manager().canvas.set_window_title('Predictions verification {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+					plt.tight_layout(rect=[0, 0, 1.1, 1])
+					mng=plt.get_current_fig_manager()
+					mng.canvas.set_window_title('Predictions verification {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+					NeuralNetwork.resizeFigure(mng)
 					if save_plots:
-						plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_verify_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
-						plt.figure()
+						plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_verify_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 					else:
 						if blocking_plots:
 							plt.show()
 						else:
 							plt.show(block=False)
-							plt.figure()
+							plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 				for i in range(self.hyperparameters.amount_companies):
 					plt.plot(verification_pred_dates,ok_rates[i], '-o')
@@ -468,20 +488,21 @@ class NeuralNetwork:
 					else:
 						plt.title('Verification OK Rate {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 					plt.xticks(verification_pred_dates,rotation=30,ha='right')
-					plt.tight_layout()
-					plt.get_current_fig_manager().canvas.set_window_title('Verification OK Rate {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+					plt.tight_layout(rect=[0, 0, 1.1, 1])
+					mng=plt.get_current_fig_manager()
+					mng.canvas.set_window_title('Verification OK Rate {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+					NeuralNetwork.resizeFigure(mng)
 					if save_plots:
-						plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_okrate_verify_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
-						plt.figure()
+						plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_okrate_verify_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 					else:
 						if blocking_plots:
 							plt.show()
 						else:
 							plt.show(block=False)
-							plt.figure()
+							plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 		metrics['Fitness']=Utils.computeNNFitness(metrics,self.hyperparameters.binary_classifier,section=None)
-		print('Fitness',metrics['Fitness'])
 
 		# print future predictions
 		if print_prediction:
@@ -526,35 +547,37 @@ class NeuralNetwork:
 					real_free_space_ratio=0
 					for j in reversed(range(self.hyperparameters.forward_samples)):
 						j_crescent=self.hyperparameters.forward_samples-j
-						plt.bar(pred_dates[:len(pred_values[i][j])],[ (1-real_free_space_ratio)/self.hyperparameters.forward_samples if el>0 else 0 for el in pred_values[i][j] ],color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['r','g']),width=0.7,linewidth=0,edgecolor='k',bottom=(1-real_free_space_ratio)*(j/self.hyperparameters.forward_samples),label='Prediction {}'.format(j_crescent), zorder=j)
+						plt.bar(pred_dates[:len(pred_values[i][j])],[ (1-real_free_space_ratio)/self.hyperparameters.forward_samples if el>0 else 0 for el in pred_values[i][j] ],color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['r','g']),width=0.7,linewidth=0,edgecolor='k',bottom=(1-real_free_space_ratio)*(j/self.hyperparameters.forward_samples),label='Pred {}'.format(j_crescent), zorder=j)
 				else:
 					if amount_of_previous_data_points>0:
-						plt.plot(dates[-amount_of_previous_data_points:],real_values[i][-amount_of_previous_data_points:], '-o',color='b', label='Last real values')
+						plt.plot(dates[-amount_of_previous_data_points:],real_values[i][-amount_of_previous_data_points:], '-o',color='b', label='Real values')
 					for j in reversed(range(self.hyperparameters.forward_samples)):
 						j_crescent=self.hyperparameters.forward_samples-j
 						if amount_of_previous_data_points>0:
 							plt.plot([dates[-1],pred_dates[0]],[real_values[i][-1],pred_values[i][j][0]], color='k', zorder=-666, linewidth=0.5)
-						plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o',color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['b','k']), label='Prediction {}'.format(j_crescent), zorder=j)
+						plt.plot(pred_dates[:len(pred_values[i][j])],pred_values[i][j], '-o',color=Utils.getPlotColorWithIndex(j_crescent,colours_to_avoid=['b','k']), label='Pred {}'.format(j_crescent), zorder=j)
 				if self.hyperparameters.amount_companies>1:
 					plt.title('Pred future values {} | Company {} of {} | {}'.format(self.data.dataset.getDatasetName(at=i),(i+1),self.hyperparameters.amount_companies,eval_type_name))
 				else:
 					plt.title('Pred future values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
-				plt.legend(loc='best')
+				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				if amount_of_previous_data_points>0:
 					plt.xticks(dates[-amount_of_previous_data_points:]+pred_dates,rotation=30,ha='right')
 				else:
 					plt.xticks(pred_dates,rotation=30,ha='right')
-				plt.tight_layout()
-				plt.get_current_fig_manager().canvas.set_window_title('Predictions future {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+				plt.tight_layout(rect=[0, 0, 1.1, 1])
+				mng=plt.get_current_fig_manager()
+				mng.canvas.set_window_title('Predictions future {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
+				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_future_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters))
-					plt.figure()
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_preds_future_{}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name),hyperparameters=self.hyperparameters), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+					plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 				else:
 					if blocking_plots:
 						plt.show()
 					else:
 						plt.show(block=False)
-						plt.figure()
+						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 			
 		
 		# save metrics
@@ -881,23 +904,26 @@ class NeuralNetwork:
 					if f==0:
 						label='Stock Values of {}'.format(self.data.dataset.getDatasetName(at=c))
 					else:
-						label='Feature {} of Company {}'.format(self.hyperparameters.input_features[f],self.data.dataset.getDatasetName(at=c))
+						label='{} of {}'.format(self.hyperparameters.input_features[f],self.data.dataset.getDatasetName(at=c))
 					# plt.plot(plt_indedex,features, label=label)
 					plt.plot(features, label=label)
-				plt.legend(loc='best')
+				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				plt_title='Loaded dataset {}'.format(self.data.dataset.getDatasetName(at=c))
 				if self.hyperparameters.normalize:
 					plt_title+=' - normalized'
-				plt.get_current_fig_manager().canvas.set_window_title(plt_title)
+				plt.tight_layout(rect=[0, 0, 1.1+NeuralNetwork.FIGURE_EXTRA_WIDTH_RATIO_FOR_HUGE_LEGEND, 1])
+				mng=plt.get_current_fig_manager()
+				mng.canvas.set_window_title(plt_title)
+				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(self.data.dataset.getDatasetName(at=c)),hyperparameters=self.hyperparameters))
-					plt.figure()
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('{}_loaded_dataset'.format(self.data.dataset.getDatasetName(at=c)),hyperparameters=self.hyperparameters), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+					plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 				else:
 					if blocking_plots:
 						plt.show()
 					else:
 						plt.show(block=False)
-						plt.figure()
+						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 	@staticmethod
 	def restoreAllBestModelsCPs(print_models=False):
@@ -957,10 +983,10 @@ class NeuralNetwork:
 			for i in range(len(uuids)):
 				if use_ok_instead_of_f1:
 					if oks[i]==oks[i] and mean_squared_errors[i]==mean_squared_errors[i]:
-			 			table.append([uuids[i],oks[i],mean_squared_errors[i]])
+						table.append([uuids[i],oks[i],mean_squared_errors[i]])
 				else:
 					if f1s[i]==f1s[i] and mean_squared_errors[i]==mean_squared_errors[i]:
-			 			table.append([uuids[i],f1s[i],mean_squared_errors[i]])
+						table.append([uuids[i],f1s[i],mean_squared_errors[i]])
 			default_epsilon=1e-9
 			objectives_size=2 #(f1/ok and mean_squared_error)
 			objectives = list(range(1,objectives_size+1)) # indices of objetives
@@ -990,18 +1016,21 @@ class NeuralNetwork:
 				else:
 					plt.xlabel('f1 score')
 				plt.ylabel('mean squared error')
-				plt.legend(loc='best')
+				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				plt.title('Pareto search space')
-				plt.get_current_fig_manager().canvas.set_window_title('Pareto search space')
+				plt.tight_layout(rect=[0, 0, 1.1, 1])
+				mng=plt.get_current_fig_manager()
+				mng.canvas.set_window_title('Pareto search space')
+				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_space_{}'.format(label)))
-					plt.figure()
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_space_{}'.format(label)), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+					plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 				else:
 					if blocking_plots:
 						plt.show()
 					else:
 						plt.show(block=False)
-						plt.figure()
+						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 				# solutions only
 				plt.scatter([-el for el in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1/ok is inverted because it is a feature to maximize
@@ -1015,17 +1044,20 @@ class NeuralNetwork:
 				else:
 					plt.xlabel('f1 score')
 				plt.ylabel('mean squared error')
-				plt.legend(loc='best')
+				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				plt.title('Pareto solutions')
-				plt.get_current_fig_manager().canvas.set_window_title('Pareto solutions')
+				plt.tight_layout(rect=[0, 0, 1.1, 1])
+				mng=plt.get_current_fig_manager()
+				mng.canvas.set_window_title('Pareto solutions')
+				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_solutions_{}'.format(label)))
-					plt.figure()
+					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_solutions_{}'.format(label)), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
+					plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 				else:
 					if blocking_plots:
 						plt.show()
 					else:
 						plt.show(block=False)
-						plt.figure()
+						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 		else:
 			print('Not enough metrics to optimize')
