@@ -89,6 +89,12 @@ class Hyperparameters:
 			raise Exception('Only input_features or amount_companies must be greater than 1')
 		if self.val_percent>1 or self.train_percent>1 or self.val_percent<0 or self.train_percent<0:
 			raise Exception('Train + validation percent must be smaller than 1 and bigger than 0')
+		# constraints
+		if self.batch_size%2!=0:
+			self.batch_size+=1 # only even batch_sizes
+		# patiences cannot be higher than epochs
+		self.patience_epochs_stop=max(self.patience_epochs_stop,self.max_epochs)
+		self.patience_epochs_reduce=max(self.patience_epochs_reduce,self.max_epochs)
 		if self.stateful and (self.batch_size is None or self.batch_size == 0):
 			self.batch_size=1 # batch size must be one for stateful
 		if len(self.layer_sizes)==self.lstm_layers:
