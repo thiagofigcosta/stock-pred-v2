@@ -8,7 +8,10 @@ services:
         restart: always
         environment:
           NEVER_CRAWL: "false"
-          RUN_PYMOO: "true"
+          RUN_DEFAULT_EXP: "false"
+          RUN_IRACE_NAS: "false"
+          RUN_GENETIC_NAS: "false"
+          RUN_PYMOO_NAS: "true"
           COMPRESS_AFTER_EXP: "true"
         volumes:
           - ./datasets:/code/datasets

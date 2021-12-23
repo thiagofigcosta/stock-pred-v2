@@ -44,6 +44,7 @@ class NeuralNetwork:
 	FIGURE_DPI=150
 	FIGURE_LEGEND_X_ANCHOR=1.0
 	FIGURE_LEGEND_Y_ANCHOR=0.5
+	MAIN_THREAD_FIGURE_MANAGER=None
 
 	def __init__(self,hyperparameters=None,hyperparameters_path=None,stock_name='undefined',verbose=False):
 		if hyperparameters is not None and type(hyperparameters)!=Hyperparameters:
@@ -65,6 +66,16 @@ class NeuralNetwork:
 			self.filenames={'hyperparameters':hyperparameters_path}
 		else:
 			self.setFilenames()
+
+	@staticmethod
+	def setFigureManagerFromMainThread():
+		NeuralNetwork.MAIN_THREAD_FIGURE_MANAGER=plt.get_current_fig_manager()
+
+	@staticmethod
+	def getFigureManager():
+		if NeuralNetwork.MAIN_THREAD_FIGURE_MANAGER is not None:
+			return NeuralNetwork.MAIN_THREAD_FIGURE_MANAGER
+		return plt.get_current_fig_manager()
 
 	@staticmethod
 	def resizeFigure(mng):
@@ -329,7 +340,7 @@ class NeuralNetwork:
 			plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 			plt.title('Training loss of {}'.format(self.data.dataset.name))
 			plt.tight_layout(rect=[0, 0, 1.1, 1])
-			mng=plt.get_current_fig_manager()
+			mng=NeuralNetwork.getFigureManager()
 			mng.canvas.set_window_title('Training loss of {}'.format(self.data.dataset.name))
 			NeuralNetwork.resizeFigure(mng)
 			if save_plots:
@@ -366,7 +377,7 @@ class NeuralNetwork:
 					plt.title('Stock values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				plt.tight_layout(rect=[0, 0, 1.1, 1])
-				mng=plt.get_current_fig_manager()
+				mng=NeuralNetwork.getFigureManager()
 				mng.canvas.set_window_title('Stock {} values of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
 				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
@@ -468,7 +479,7 @@ class NeuralNetwork:
 					plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 					plt.xticks(verification_pred_dates,rotation=30,ha='right')
 					plt.tight_layout(rect=[0, 0, 1.1, 1])
-					mng=plt.get_current_fig_manager()
+					mng=NeuralNetwork.getFigureManager()
 					mng.canvas.set_window_title('Predictions verification {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 					NeuralNetwork.resizeFigure(mng)
 					if save_plots:
@@ -489,7 +500,7 @@ class NeuralNetwork:
 						plt.title('Verification OK Rate {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 					plt.xticks(verification_pred_dates,rotation=30,ha='right')
 					plt.tight_layout(rect=[0, 0, 1.1, 1])
-					mng=plt.get_current_fig_manager()
+					mng=NeuralNetwork.getFigureManager()
 					mng.canvas.set_window_title('Verification OK Rate {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 					NeuralNetwork.resizeFigure(mng)
 					if save_plots:
@@ -566,7 +577,7 @@ class NeuralNetwork:
 				else:
 					plt.xticks(pred_dates,rotation=30,ha='right')
 				plt.tight_layout(rect=[0, 0, 1.1, 1])
-				mng=plt.get_current_fig_manager()
+				mng=NeuralNetwork.getFigureManager()
 				mng.canvas.set_window_title('Predictions future {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
@@ -912,7 +923,7 @@ class NeuralNetwork:
 				if self.hyperparameters.normalize:
 					plt_title+=' - normalized'
 				plt.tight_layout(rect=[0, 0, 1.1+NeuralNetwork.FIGURE_EXTRA_WIDTH_RATIO_FOR_HUGE_LEGEND, 1])
-				mng=plt.get_current_fig_manager()
+				mng=NeuralNetwork.getFigureManager()
 				mng.canvas.set_window_title(plt_title)
 				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
@@ -1019,7 +1030,7 @@ class NeuralNetwork:
 				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				plt.title('Pareto search space')
 				plt.tight_layout(rect=[0, 0, 1.1, 1])
-				mng=plt.get_current_fig_manager()
+				mng=NeuralNetwork.getFigureManager()
 				mng.canvas.set_window_title('Pareto search space')
 				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
@@ -1047,7 +1058,7 @@ class NeuralNetwork:
 				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				plt.title('Pareto solutions')
 				plt.tight_layout(rect=[0, 0, 1.1, 1])
-				mng=plt.get_current_fig_manager()
+				mng=NeuralNetwork.getFigureManager()
 				mng.canvas.set_window_title('Pareto solutions')
 				NeuralNetwork.resizeFigure(mng)
 				if save_plots:

@@ -8,7 +8,7 @@ FROM python:3.8-slim
 WORKDIR /code
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends graphviz r-base make gcc libc6-dev 
+  && apt-get install -y --no-install-recommends graphviz r-base make gcc libc6-dev procps
 
 # install irace under /usr/local/lib/R/site-library/irace
 RUN echo "install.packages('irace', repos='http://cran.us.r-project.org')" | R --no-save

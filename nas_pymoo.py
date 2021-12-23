@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from pickle import NONE
 from Crawler import Crawler
 from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
@@ -16,12 +17,14 @@ from pymoo.optimize import minimize
 from pymoo.core.problem import Problem
 from pymoo.operators.mixed_variable_operator import MixedVariableSampling, MixedVariableMutation, MixedVariableCrossover
 import numpy as np
-
-
+import pathos.pools as pp
 
 
 
 class StockPredNAS(Problem):
+
+	WORST_VALUE=2147483647
+	BEST_VALUE=-2147483647
 
 	def __init__(self,search_space,input_features,output_feature,index_feature,metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,pop_size=50,children_per_gen=50,eliminate_duplicates=False):
 		objectives=2
@@ -83,28 +86,27 @@ class StockPredNAS(Problem):
 		
 		super().__init__(n_var=len(x_types), n_obj=objectives, n_constr=0, xl=x_lower_limit, xu=x_upper_limit)
 
-
-	def _evaluate(self, x, out, *args, **kwargs):
-		generation_mse=[]	
-		generation_ok_rate=[]	
-		worst_value=2147483647
-
-		for i,individual in enumerate(x):
-			try:
-				mse=None
-				ok_rate=None
-				ind_id=StockPredNAS.getIndId(i,gen=self.gen)
-				hyperparameters=Genome.dnaToHyperparameters(individual,ind_id,self.input_features,self.output_feature,self.index_feature,self.metrics,self.loss,self.train_percent,self.val_percent,self.amount_companies,self.binary_classifier)
-				
-				neuralNetwork=NeuralNetwork(hyperparameters,stock_name=self.stock,verbose=False)
-				neuralNetwork.loadDataset(self.filepath,plot=False,blocking_plots=False,save_plots=True)
+	@staticmethod
+	def _trainCallback(i_and_individual,gen,stock,filepath,test_date,input_features,output_feature,index_feature,metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,train=True,test=True):
+		i,individual=i_and_individual
+		mse=None
+		ok_rate=None
+		just_train=train and not test
+		try:
+			ind_id=StockPredNAS.getIndId(i,gen=gen)
+			hyperparameters=Genome.dnaToHyperparameters(individual,ind_id,input_features,output_feature,index_feature,metrics,loss,train_percent,val_percent,amount_companies,binary_classifier)
+			neuralNetwork=NeuralNetwork(hyperparameters,stock_name=stock,verbose=False)
+			if train:
+				neuralNetwork.loadDataset(filepath,plot=False,blocking_plots=False,save_plots=True)
 				neuralNetwork.buildModel(plot_model_to_file=True)
 				neuralNetwork.train()
 				neuralNetwork.restoreCheckpointWeights(delete_after=False)
 				neuralNetwork.save()
-				neuralNetwork.loadTestDataset(self.filepath,from_date=self.test_date,blocking_plots=False,save_plots=True)
+			if test:
+				if not train:
+					neuralNetwork.load()
+				neuralNetwork.loadTestDataset(filepath,from_date=test_date,blocking_plots=False,save_plots=True)
 				neuralNetwork.eval(plot=True,print_prediction=False,blocking_plots=False,save_plots=True)
-				
 				try:
 					mse=neuralNetwork.metrics['test']['Model Metrics']['mean_squared_error']
 				except Exception as e:
@@ -114,21 +116,67 @@ class StockPredNAS(Problem):
 				except Exception as e:
 					print(str(e))
 
-				neuralNetwork.destroy()
-			except Exception as e:
-				print(str(e))
+			neuralNetwork.destroy()
+		except Exception as e:
+			print(str(e))
+			if just_train:
+				return False
 
-			if mse is None or mse!=mse:
-				mse=worst_value
+		if just_train:
+			return True
 
-			if ok_rate is None or ok_rate!=ok_rate:
-				ok_rate=worst_value
-			else:
-				# since the it is a minimization problem
-				ok_rate*=-1
+		if mse is None or mse!=mse:
+			mse=StockPredNAS.WORST_VALUE
 
-			generation_mse.append(mse)
-			generation_ok_rate.append(ok_rate)
+		if ok_rate is None or ok_rate!=ok_rate:
+			ok_rate=StockPredNAS.WORST_VALUE
+		else:
+			# since the it is a minimization problem
+			ok_rate*=-1
+
+		return {'mse':mse,'ok_rate':ok_rate}
+
+	def _evaluate(self, x, out, *args, **kwargs):
+		generation_mse=[]	
+		generation_ok_rate=[]	
+
+		if self.parallelism==1:
+			for i,individual in enumerate(x):
+				metrics=StockPredNAS._trainCallback((i,individual),self.gen,self.stock,self.filepath,self.test_date,self.input_features,self.output_feature,self.index_feature,self.metrics,self.loss,self.train_percent,self.val_percent,self.amount_companies,self.binary_classifier)
+				generation_mse.append(metrics['mse'])
+				generation_ok_rate.append(metrics['ok_rate'])
+		else:
+			a=[self.gen]*len(x)
+			b=[self.stock]*len(x)
+			c=[self.filepath]*len(x)
+			d=[self.test_date]*len(x)
+			e=[self.input_features]*len(x)
+			f=[self.output_feature]*len(x)
+			g=[self.index_feature]*len(x)
+			h=[self.metrics]*len(x)
+			i=[self.loss]*len(x)
+			j=[self.train_percent]*len(x)
+			k=[self.val_percent]*len(x)
+			l=[self.amount_companies]*len(x)
+			m=[self.binary_classifier]*len(x)
+			n=[True]*len(x) # train
+			o=[False]*len(x) # test
+			with pp.ThreadPool(self.parallelism,maxtasksperchild=None) as pool:
+				# outputs=pool.map(StockPredNAS._trainCallback, enumerate(x),a,b,c,d,e,f,g,h,i,j,k,l,m) # cannot plot because matplot is not thread safe
+				success=pool.imap(StockPredNAS._trainCallback, enumerate(x),a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) # imap is non blocking
+				error=0
+				for ind in success:
+					if not ind:
+						error+=1
+				if error>0:
+					print('Got {} errors while evaluating...'.format(error))
+
+			# testing and plotting
+			for i,individual in enumerate(x):
+				metrics=StockPredNAS._trainCallback((i,individual),self.gen,self.stock,self.filepath,self.test_date,self.input_features,self.output_feature,self.index_feature,self.metrics,self.loss,self.train_percent,self.val_percent,self.amount_companies,self.binary_classifier,False,True)
+				generation_mse.append(metrics['mse'])
+				generation_ok_rate.append(metrics['ok_rate'])
+
 		self.gen+=1
 		out["F"] = np.column_stack([generation_mse, generation_ok_rate])
 
@@ -139,7 +187,15 @@ class StockPredNAS(Problem):
 			gen=individual.data['n_gen']
 		return 'gen: {} - ind: {}'.format(gen,i)
 
-	def optmize(self,stock,filepath,test_date,max_evals=1000,verbose=True,store_metrics=True):
+	def optmize(self,stock,filepath,test_date,max_evals=1000,parallelism=1,verbose=True,store_metrics=True):
+		if parallelism==0:
+			parallelism=os.cpu_count()
+		elif parallelism < 0:
+			parallelism=1
+		if parallelism != 1:
+			print('Parallelism: {}'.format(parallelism))
+			NeuralNetwork.setFigureManagerFromMainThread()
+		self.parallelism=parallelism
 		self.gen=0
 		self.stock=stock
 		self.filepath=filepath
@@ -148,7 +204,7 @@ class StockPredNAS(Problem):
 			self,
 			self.algorithm,
 			termination=('n_eval', max_evals),
-			save_history=True,
+			save_history=store_metrics,
 			verbose=verbose
 		)
 		# parse history
@@ -174,7 +230,6 @@ class StockPredNAS(Problem):
 feature_group=0 #0-6
 binary_classifier=False
 stock='IBM'
-use_enhanced=False
 
 input_features=Hyperparameters.getFeatureGroups()
 
@@ -234,24 +289,34 @@ if not Utils.checkIfPathExists(filepath) and not never_crawl:
 	
 
 
+parallelism=0
 verbose_genetic=True
-population_size=20
-offspring_size=20
-eliminate_duplicates=False
-max_evals=100
+population_size=22
+offspring_size=22
+eliminate_duplicates=True
+max_evals=200
 store_metrics=False
 notables=5
 
 
+print('Instantiating the problem...')
 stock_pred_nas=StockPredNAS(search_space,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,pop_size=population_size,children_per_gen=offspring_size,eliminate_duplicates=eliminate_duplicates)
-solutions=stock_pred_nas.optmize(stock,filepath,test_date,max_evals=max_evals,verbose=verbose_genetic,store_metrics=store_metrics)
-
+print('Instantiating the problem...OK')
+print('Optmizing...')
+solutions=stock_pred_nas.optmize(stock,filepath,test_date,max_evals=max_evals,parallelism=parallelism,verbose=verbose_genetic,store_metrics=store_metrics)
+print('Optmizing...OK')
+print()
+print()
+print()
 print('Solutions')
 for i,sol in enumerate(solutions[:notables]):
 	print('{} -> {}: {}'.format(i,sol['individual'],sol['result']))
+print()
+print()
+print()
 
 print('Evaluating solutions...')
-
+# TODO use on ind_id the hash of individuals dna, avoiding to train again during the test callback
 def test_callback(dna,ind_id):
 	global stock,filepath,test_date,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier,start_date_formated_for_file,end_date_formated_for_file
 	hyperparameters=Genome.dnaToHyperparameters(dna,ind_id,input_features,output_feature,index_feature,model_metrics,loss,train_percent,val_percent,amount_companies,binary_classifier)

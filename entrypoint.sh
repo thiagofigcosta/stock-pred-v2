@@ -11,12 +11,15 @@ if [[ "$RUN_DEFAULT_EXP" = [tT][rR][uU][eE] ]]; then
     python main.py --dummy --restore-backups | tee -a log.txt; \
     echo -e "\n\n\nDONE\n" | tee -a log.txt
 elif [[ "$RUN_IRACE_NAS" = [tT][rR][uU][eE] ]]; then
+    python main.py --dummy --clear-plots-models-and-datasets
     (cd /code/irace ; /usr/local/lib/R/site-library/irace/bin/irace | tee ../log.txt)
     echo -e "\n\n\nDONE\n" | tee -a log.txt
 elif [[ "$RUN_GENETIC_NAS" = [tT][rR][uU][eE] ]]; then
+    python main.py --dummy --clear-plots-models-and-datasets
     python nas_genetic.py | tee log.txt
     echo -e "\n\n\nDONE\n" | tee -a log.txt
-elif [[ "$RUN_PYMOO" = [tT][rR][uU][eE] ]]; then
+elif [[ "$RUN_PYMOO_NAS" = [tT][rR][uU][eE] ]]; then
+    python main.py --dummy --clear-plots-models-and-datasets
     python nas_pymoo.py | tee log.txt
     echo -e "\n\n\nDONE\n" | tee -a log.txt
 fi
