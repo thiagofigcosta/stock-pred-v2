@@ -105,9 +105,12 @@ class Actuator:
 					multiplier=(lucky_randomness+confidence)/2
 					if multiplier > 0.23:
 						multiplier=0.23
-					stocks_to_buy=math.ceil(max_stocks_possible*multiplier)
-					if stocks_to_buy<2:
-						stocks_to_buy=2
+					try:
+						stocks_to_buy=math.ceil(max_stocks_possible*multiplier)
+						if stocks_to_buy<2:
+							stocks_to_buy=2
+					except:
+						stocks_to_buy=0
 				except Exception as e:
 					print("Error on auto13")
 					print(type(e),e)
