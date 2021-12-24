@@ -229,7 +229,8 @@ class StockPredNAS(Problem):
 
 feature_group=0 #0-6
 binary_classifier=False
-stock='IBM'
+stock=os.getenv('NAS_STOCK', default='T')
+print('Running for `{}` stock'.format(stock))
 
 input_features=Hyperparameters.getFeatureGroups()
 
@@ -291,10 +292,10 @@ if not Utils.checkIfPathExists(filepath) and not never_crawl:
 
 parallelism=0
 verbose_genetic=True
-population_size=22
-offspring_size=22
+population_size=30
+offspring_size=30
 eliminate_duplicates=True
-max_evals=200
+max_evals=500
 store_metrics=False
 notables=5
 
