@@ -66,6 +66,7 @@ class NeuralNetwork:
 			self.filenames={'hyperparameters':hyperparameters_path}
 		else:
 			self.setFilenames()
+		tf.keras.backend.set_epsilon(1)
 
 	@staticmethod
 	def setFigureManagerFromMainThread():
@@ -1072,3 +1073,58 @@ class NeuralNetwork:
 						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 		else:
 			print('Not enough metrics to optimize')
+
+
+	def datasetMagnitudeCalc(self):
+		# real_values=self.data.dataset.getValues(only_main_value=True)
+		real_values=self.data.getValuesSplittedByFeature()[0][0] # get feature 0 of company 0
+
+		real_values=real_values[self.hyperparameters.backwards_samples-1:]
+
+		real_train=None
+		real_val=None
+		real_test=None
+		if self.data.train_start_idx is not None:
+			real_test=real_values[int(len(real_values)*self.data.train_percent):-self.hyperparameters.forward_samples]
+			real_train=real_values[:int(len(real_values)*self.data.train_percent)]
+			if self.data.val_start_idx is not None:
+				real_val=real_train[int(len(real_train)*(1-self.data.val_percent)):]
+				real_train=real_train[:int(len(real_train)*(1-self.data.val_percent))]
+		else:
+			real_test=real_values[:-self.hyperparameters.forward_samples]
+			real_values=None
+
+
+		if real_values is not None:
+			total_sum=sum(real_values)
+			count=len(real_values)
+			average=0
+			if count>0:
+				average=total_sum/count
+			print('All values sum: {}, average: {}, count: {}'.format(total_sum,average,count))
+
+		if real_train is not None:
+			total_sum=sum(real_train)
+			count=len(real_train)
+			average=0
+			if count>0:
+				average=total_sum/count
+			print('Train values sum: {}, average: {}, count: {}'.format(total_sum,average,count))
+
+
+		if real_val is not None:
+			total_sum=sum(real_val)
+			count=len(real_val)
+			average=0
+			if count>0:
+				average=total_sum/count
+			print('Val values sum: {}, average: {}, count: {}'.format(total_sum,average,count))
+
+
+		if real_test is not None:
+			total_sum=sum(real_test)
+			count=len(real_test)
+			average=0
+			if count>0:
+				average=total_sum/count
+			print('Test values sum: {}, average: {}, count: {}'.format(total_sum,average,count))

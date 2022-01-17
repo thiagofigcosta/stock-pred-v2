@@ -13,6 +13,8 @@ from NeuralNetwork import NeuralNetwork
 from Hyperparameters import Hyperparameters
 from Utils import Utils
 
+COMPUTE_STOCK_MAGNITUDE=False
+
 def getPredefHyperparams():
 	hyperparameters=[]
 
@@ -28,12 +30,12 @@ def getPredefHyperparams():
 	if binary_classifier:
 		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.UP
-		model_metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error','mean_absolute_percentage_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.CLOSE
-		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity','mean_absolute_percentage_error']
 		loss='mean_squared_error'
 	# fixed
 	shuffle=False
@@ -71,12 +73,12 @@ def getPredefHyperparams():
 	if binary_classifier:
 		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.UP
-		model_metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error','mean_absolute_percentage_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.CLOSE
-		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity','mean_absolute_percentage_error']
 		loss='mean_squared_error'
 	# fixed
 	shuffle=False
@@ -113,12 +115,12 @@ def getPredefHyperparams():
 	if binary_classifier:
 		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.UP
-		model_metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error','mean_absolute_percentage_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.CLOSE
-		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity','mean_absolute_percentage_error']
 		loss='mean_squared_error'
 	# fixed
 	shuffle=False
@@ -157,12 +159,12 @@ def getPredefHyperparams():
 	if binary_classifier:
 		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.UP
-		model_metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error','mean_absolute_percentage_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.CLOSE
-		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity','mean_absolute_percentage_error']
 		loss='mean_squared_error'
 	# fixed
 	shuffle=False
@@ -199,12 +201,12 @@ def getPredefHyperparams():
 	if binary_classifier:
 		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.UP
-		model_metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error','mean_absolute_percentage_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.CLOSE
-		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity','mean_absolute_percentage_error']
 		loss='mean_squared_error'
 	# fixed
 	shuffle=False
@@ -242,12 +244,12 @@ def getPredefHyperparams():
 	if binary_classifier:
 		input_features=[Features.UP]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.UP
-		model_metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error','mean_absolute_percentage_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+Hyperparameters.getFeatureGroups()[feature_group]
 		output_feature=Features.CLOSE
-		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity','mean_absolute_percentage_error']
 		loss='mean_squared_error'
 	# fixed
 	shuffle=False
@@ -358,6 +360,18 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	if enrich_dataset:
 		for stock in stocks:
 			NeuralNetwork.enrichDataset(filepaths[stock])
+
+	if COMPUTE_STOCK_MAGNITUDE:
+		print('Magninute calc train')
+		for stock in stocks:
+			for hyperparameter in hyperparameters[stock]:
+				try:
+					neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
+					neuralNetwork.loadDataset(filepaths[stock],plot=plot_dataset,blocking_plots=blocking_plots,save_plots=save_plots)
+					neuralNetwork.datasetMagnitudeCalc()
+					neuralNetwork.destroy()
+				except:
+					pass
 	
 	if train_model or force_train:
 		for stock in stocks:
@@ -374,6 +388,18 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	
 	if restore_checkpoints:
 		NeuralNetwork.restoreAllBestModelsCPs() # restore the best models
+
+	if COMPUTE_STOCK_MAGNITUDE:
+		print('Magninute calc test')
+		for stock in stocks:
+			for hyperparameter in hyperparameters[stock]:
+				try:
+					neuralNetwork=NeuralNetwork(hyperparameter,stock_name=stock,verbose=True)
+					neuralNetwork.loadTestDataset(filepaths[stock],from_date=test_date,blocking_plots=blocking_plots,save_plots=save_plots)
+					neuralNetwork.datasetMagnitudeCalc()
+					neuralNetwork.destroy()
+				except:
+					pass
 
 	if eval_model:
 		for stock in stocks:

@@ -94,12 +94,12 @@ if __name__ == '__main__':
 	if binary_classifier:
 		input_features=[Features.UP]+input_features[feature_group]
 		output_feature=Features.UP
-		model_metrics=['accuracy','mean_squared_error']
+		model_metrics=['accuracy','mean_squared_error','mean_absolute_percentage_error']
 		loss='categorical_crossentropy'
 	else:
 		input_features=[Features.CLOSE]+input_features[feature_group]
 		output_feature=Features.CLOSE
-		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity']
+		model_metrics=['R2','mean_squared_error','mean_absolute_error','accuracy','cosine_similarity','mean_absolute_percentage_error']
 		loss='mean_squared_error'
 
 	ap = argparse.ArgumentParser()
