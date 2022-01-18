@@ -30,7 +30,7 @@ never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdad
 search_space=SearchSpace()
 search_space.add(5,60,SearchSpace.Type.INT,'backwards_samples')
 search_space.add(7,14,SearchSpace.Type.INT,'forward_samples')
-search_space.add(1,5,SearchSpace.Type.INT,'lstm_layers')
+search_space.add(0,5,SearchSpace.Type.INT,'lstm_layers')
 search_space.add(500,5000,SearchSpace.Type.INT,'max_epochs')
 search_space.add(100,5000,SearchSpace.Type.INT,'patience_epochs_stop')
 search_space.add(0,1000,SearchSpace.Type.INT,'patience_epochs_reduce')
