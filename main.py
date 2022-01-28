@@ -4,6 +4,7 @@
 import os
 import sys
 import time
+import re
 import getopt
 import matplotlib
 from Enums import *
@@ -278,8 +279,96 @@ def getPredefHyperparams():
 	return hyperparameters
 
 
+def run_available_networks():
+	models={}
+	for file_str in os.listdir(NeuralNetwork.MODELS_PATH):
+		re_result=re.search(r'([a-z0-9]*_[a-zA-Z0-9\-%\.=]*)_.*\.(h5|json|bin)', file_str)
+		if re_result:
+			model_id=re_result.group(1)
+			if model_id not in models:
+				models[model_id]=[file_str]
+			else:
+				models[model_id].append(file_str)
+	for i,(base,files) in enumerate(models.items()):
+		checkpoint_filename=None
+		model_filename=None
+		metrics_filename=None
+		last_patience_filename=None
+		scaler_filename=None
+		history_filename=None
+		hyperparam_filename=None
+		hyper_hash= base.split('_')[0]
+		stock= base.split('_')[1]
+		for file in files:
+			if re.search(r'.*_scaler\.bin', file):
+				scaler_filename=file
+			elif re.search(r'.*_hyperparams\.json', file):
+				hyperparam_filename=file
+			elif re.search(r'.*_history\.json', file):
+				history_filename=file
+			elif re.search(r'.*_cp\.h5', file):
+				checkpoint_filename=file
+			elif re.search(r'.*(?<![_cp|_last_patience])\.h5', file):
+				model_filename=file
+			elif re.search(r'.*(?<!_last_patience)_metrics\.json', file):
+				metrics_filename=file
+			elif re.search(r'.*_last_patience\.h5', file):
+				last_patience_filename=file
 
-def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper,test_date):
+		if hyperparam_filename is not None:
+			train = False
+			if model_filename is None:
+				if checkpoint_filename is not None:
+					model_filename = base+'.h5'
+					Utils.copyFile(Utils.joinPath(NeuralNetwork.MODELS_PATH,checkpoint_filename), Utils.joinPath(NeuralNetwork.MODELS_PATH,model_filename))
+				elif last_patience_filename is not None:
+					model_filename = base+'.h5'
+					Utils.copyFile(Utils.joinPath(NeuralNetwork.MODELS_PATH,last_patience_filename), Utils.joinPath(NeuralNetwork.MODELS_PATH,model_filename))
+				else:
+					train = True
+
+			hyperparameter=Hyperparameters.loadJson(Utils.joinPath(NeuralNetwork.MODELS_PATH,hyperparam_filename))
+			hyperparameter.uuid = hyper_hash # To ensure that the uuid will remain the same
+			if 'mean_absolute_percentage_error' not in hyperparameter.model_metrics:
+				hyperparameter.model_metrics.append('mean_absolute_percentage_error') # TODO temporary
+			eval_model=True
+			plot=True
+			plot_eval=True
+			plot_dataset=True
+			blocking_plots=False
+			save_plots=True
+			restore_checkpoints=False
+			download_if_needed=True
+			stocks=[stock]
+			start_date='01/01/2016' #Utils.FIRST_DATE
+			end_date='07/05/2021'
+			test_date='07/01/2021'
+			enrich_dataset=True
+			analyze_metrics=True if i+1 == len(models) else False
+			move_models=False
+			all_hyper_for_all_stocks=None
+			only_first_hyperparam=None
+			add_more_fields_to_hyper=None
+			hyperparams_per_stock={
+				stock: [hyperparameter]
+			}
+
+			print(hyperparameter.uuid)
+			print('Found model {}'.format(hyper_hash))
+			print('\tstock: {}'.format(stock))
+			print('\thyperparam_filename: {}'.format(hyperparam_filename))
+			print('\tcheckpoint_filename: {}'.format(checkpoint_filename))
+			print('\tmodel_filename: {}'.format(model_filename))
+			print('\tmetrics_filename: {}'.format(metrics_filename))
+			print('\tlast_patience_filename: {}'.format(last_patience_filename))
+			print('\tscaler_filename: {}'.format(scaler_filename))
+			print('\thistory_filename: {}'.format(history_filename))
+			print()
+
+			run(train,train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper,test_date,hyperparams_per_stock=hyperparams_per_stock)
+
+
+def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_plots,save_plots,restore_checkpoints,download_if_needed,stocks,start_date,end_date,enrich_dataset,analyze_metrics,move_models,all_hyper_for_all_stocks,only_first_hyperparam,add_more_fields_to_hyper,test_date,hyperparams_per_stock=None):
 	never_crawl=os.getenv('NEVER_CRAWL',default='False')
 	never_crawl=never_crawl.lower() in ('true', '1', 't', 'y', 'yes', 'sim', 'verdade')
 	
@@ -288,6 +377,7 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 	if save_plots:
 		matplotlib.use('Agg')
 		print('Using plot id: ',NeuralNetwork.SAVED_PLOTS_ID)
+		plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 	print('Running for stocks: {}'.format(','.join(stocks)))
 
@@ -318,44 +408,47 @@ def run(train_model,force_train,eval_model,plot,plot_eval,plot_dataset,blocking_
 			crawler.downloadStockDailyData(stock,filename,start_date=start_date,end_date=end_date)
 			# crawler.downloadStockDataCustomInterval(stock,filename,data_range='max') # just example
 	
-	hyperparameters_tmp=getPredefHyperparams()
-	if only_first_hyperparam:
-		hyperparameters_tmp=[hyperparameters_tmp[0]]
-	if not all_hyper_for_all_stocks: # then create a circular"ish" list, only works when running all stocks together, otherwise it will always use the first
-		if len(stocks) > len(hyperparameters_tmp):
-			for i in range(len(stocks)-len(hyperparameters_tmp)):
-				hyperparameters_tmp.append(hyperparameters_tmp[i%len(hyperparameters_tmp)].copy())
-	
-	hyperparameters={}
-	for i,stock in enumerate(stocks):
-		new_input_fields=('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Adj Close')
-		if all_hyper_for_all_stocks:
-			hyperparameters[stock]=[]
-			for hyper in hyperparameters_tmp:
-				if hyper.name != '':
-					hyper.setName('{} - from: {} to: {}'.format(hyper.name,start_date,end_date))
+	if hyperparams_per_stock is None:
+		hyperparameters_tmp=getPredefHyperparams()
+		if only_first_hyperparam:
+			hyperparameters_tmp=[hyperparameters_tmp[0]]
+		if not all_hyper_for_all_stocks: # then create a circular"ish" list, only works when running all stocks together, otherwise it will always use the first
+			if len(stocks) > len(hyperparameters_tmp):
+				for i in range(len(stocks)-len(hyperparameters_tmp)):
+					hyperparameters_tmp.append(hyperparameters_tmp[i%len(hyperparameters_tmp)].copy())
+		
+		hyperparameters={}
+		for i,stock in enumerate(stocks):
+			new_input_fields=('fast_moving_avg','slow_moving_avg','Volume','Open','High','Low','Adj Close')
+			if all_hyper_for_all_stocks:
+				hyperparameters[stock]=[]
+				for hyper in hyperparameters_tmp:
+					if hyper.name != '':
+						hyper.setName('{} - from: {} to: {}'.format(hyper.name,start_date,end_date))
+					else:
+						hyper.setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
+					hyperparameters[stock].append(hyper.copy())
+					if add_more_fields_to_hyper:
+						for new_input_field in new_input_fields:
+							new_hyperparameters=hyper.copy()
+							new_hyperparameters.input_features.append(new_input_field)
+							new_hyperparameters.genAndSetUuid()
+							hyperparameters[stock].append(new_hyperparameters)
+			else:
+				if hyperparameters_tmp[i].name != '':
+					hyperparameters_tmp[i].setName('{} - from: {} to: {}'.format(hyperparameters_tmp[i].name,start_date,end_date))
 				else:
-					hyper.setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
-				hyperparameters[stock].append(hyper.copy())
+					hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
+				hyperparameters[stock]=[hyperparameters_tmp[i]]
 				if add_more_fields_to_hyper:
 					for new_input_field in new_input_fields:
-						new_hyperparameters=hyper.copy()
+						new_hyperparameters=hyperparameters[stock][-1].copy()
 						new_hyperparameters.input_features.append(new_input_field)
 						new_hyperparameters.genAndSetUuid()
 						hyperparameters[stock].append(new_hyperparameters)
-		else:
-			if hyperparameters_tmp[i].name != '':
-				hyperparameters_tmp[i].setName('{} - from: {} to: {}'.format(hyperparameters_tmp[i].name,start_date,end_date))
-			else:
-				hyperparameters_tmp[i].setName('manual tunning - from: {} to: {}'.format(start_date,end_date))
-			hyperparameters[stock]=[hyperparameters_tmp[i]]
-			if add_more_fields_to_hyper:
-				for new_input_field in new_input_fields:
-					new_hyperparameters=hyperparameters[stock][-1].copy()
-					new_hyperparameters.input_features.append(new_input_field)
-					new_hyperparameters.genAndSetUuid()
-					hyperparameters[stock].append(new_hyperparameters)
-	hyperparameters_tmp=[]
+		hyperparameters_tmp=[]
+	else:
+		hyperparameters=hyperparams_per_stock
 
 	if enrich_dataset:
 		for stock in stocks:
@@ -478,9 +571,10 @@ echo -e "\n\n\nDONE\n" >> log.txt
 	only_first_hyperparam=False
 	add_more_fields_to_hyper=True
 	test_date=None
+	run_available_hyperparams=False
 	stocks=[]
 	try:
-		opts, _ = getopt.getopt(argv,'htep',['help','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','test-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy','run-all-stocks-together','use-all-hyper-on-all-stocks','only-first-hyperparam','do-not-test-hyperparams-with-more-fields'])
+		opts, _ = getopt.getopt(argv,'htep',['help','run-available-hyperparams','train','force-train','eval','plot','plot-eval','plot-dataset','blocking-plots','save-plots','force-no-plots','do-not-restore-checkpoints','do-not-download','stock=','start-date=','end-date=','test-date=','enrich-dataset','clear-plots-models-and-datasets','analyze-metrics','move-models-to-backup','restore-backups','dummy','run-all-stocks-together','use-all-hyper-on-all-stocks','only-first-hyperparam','do-not-test-hyperparams-with-more-fields'])
 	except getopt.GetoptError:
 		print ('ERROR PARSING ARGUMENTS, try to use the following:\n\n')
 		print (help_str)
@@ -499,6 +593,8 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			eval_model=True
 		elif opt in ('p','plot'):
 			plot=True
+		elif opt == 'run-available-hyperparams':
+			run_available_hyperparams=True
 		elif opt == 'use-all-hyper-on-all-stocks':
 			all_hyper_for_all_stocks=True
 		elif opt == 'run-all-stocks-together':
@@ -553,6 +649,12 @@ echo -e "\n\n\nDONE\n" >> log.txt
 			dummy=True
 
 	if dummy:
+		if analyze_metrics:
+			run(False,False,False,True,False,False,False,True,False,False,[],None,None,False,analyze_metrics,False,None,None,None,None,hyperparams_per_stock={})
+		sys.exit(0)
+
+	if run_available_hyperparams:
+		run_available_networks()
 		sys.exit(0)
 
 	if len(stocks)==0:	

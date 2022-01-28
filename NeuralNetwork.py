@@ -154,8 +154,9 @@ class NeuralNetwork:
 				Utils.deleteFile(self.getModelPath(self.filenames['checkpoint']))
 
 	def load(self):
-		self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
-		self.setFilenames()
+		if self.hyperparameters is None:
+			self.hyperparameters=Hyperparameters.loadJson(self.getModelPath(self.filenames['hyperparameters']))
+			self.setFilenames()
 		self.model=load_model(self.getModelPath(self.filenames['model']),custom_objects=self._metricsFactory())
 		self.batchSizeWorkaround() # needed to avoid cropping test data
 		if self.data is None:
@@ -378,6 +379,7 @@ class NeuralNetwork:
 					plt.title('Stock values {} | {}'.format(self.data.dataset.getDatasetName(at=i),eval_type_name))
 				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
 				plt.tight_layout(rect=[0, 0, 1.1, 1])
+				plt.gcf().autofmt_xdate() # Fix date ticks to avoid overlap
 				mng=NeuralNetwork.getFigureManager()
 				mng.canvas.set_window_title('Stock {} values of {}'.format(eval_type_name,self.data.dataset.getDatasetName(at=i)))
 				NeuralNetwork.resizeFigure(mng)
@@ -424,7 +426,7 @@ class NeuralNetwork:
 							if up_ok:
 								summary[tmp_dates[k]]['up_ok']+=1
 						else:
-							diff=round(verification_all_predictions[i][j][k]-previous_value,2)
+							diff=round(verification_all_predictions[i][j][k]-previous_value,2) # We are using the previous real value to compare
 							up=diff>0
 							diff_from_real=round(verification_all_predictions[i][j][k]-verification_real_values[i][k],2)
 							diff_real=round(verification_real_values[i][k]-previous_value,2)
@@ -432,7 +434,7 @@ class NeuralNetwork:
 							up_ok=up_real==up
 							if print_prediction:
 								print('\t\t{}: pred: {:+.2f} pred_delta: {:+.2f} real: {:+.2f} real_delta: {:+.2f} | pred_up: {} real_up: {} - OK: {} | diff_pred-real: {}'.format(tmp_dates[k],round(verification_all_predictions[i][j][k],2),diff,round(verification_real_values[i][k],2),diff_real,up,up_real,up_ok,diff_from_real))
-							previous_value=verification_real_values[i][k]
+							previous_value=verification_real_values[i][k] # We are using the previous real value to compare
 							if tmp_dates[k] not in summary:
 								summary[tmp_dates[k]]={'pred_up':0,'real_up':0,'pred_down':0,'real_down':0,'up_ok':0}
 							if up:
@@ -941,7 +943,7 @@ class NeuralNetwork:
 	def restoreAllBestModelsCPs(print_models=False):
 		models={}
 		for file_str in os.listdir(NeuralNetwork.MODELS_PATH):
-			re_result=re.search(r'([a-z0-9]*).*\.(h5|json)', file_str)
+			re_result=re.search(r'([a-z0-9]*_[a-zA-Z0-9\.=\-%]*)_.*\.(h5|json|bin)', file_str)
 			if re_result:
 				model_id=re_result.group(1)
 				if model_id not in models:
@@ -1009,7 +1011,7 @@ class NeuralNetwork:
 			solutions = pareto.eps_sort(table, objectives, default_epsilons,**pareto_kwargs)
 			solution_labels=[]
 			solution_coordinates=[[] for _ in range(objectives_size)]
-			print('Pareto solutions:')
+			print('Pareto non-dominated solutions:')
 			for solution in solutions:
 				solution_labels.append(solution[0])
 				for i in range(objectives_size):
@@ -1022,17 +1024,18 @@ class NeuralNetwork:
 					plt.scatter([-ok for ok in oks],mean_squared_errors,label='Solution candidates',color='blue') # f1/ok is inverted because it is a feature to maximize
 				else:
 					plt.scatter([-f1 for f1 in f1s],mean_squared_errors,label='Solution candidates',color='blue') # f1/ok is inverted because it is a feature to maximize
-				plt.scatter([-el for el in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1/ok is inverted because it is a feature to maximize
+				plt.scatter([-el for el in solution_coordinates[0]],solution_coordinates[1],label='Non-dominated solutions',color='red') # f1/ok is inverted because it is a feature to maximize
 				if use_ok_instead_of_f1:
-					plt.xlabel('ok score')
+					plt.xlabel('-AAR')
 				else:
-					plt.xlabel('f1 score')
-				plt.ylabel('mean squared error')
-				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
-				plt.title('Pareto search space')
+					plt.xlabel('F1 Score')
+				plt.ylabel('Mean Squared Error')
+				# plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR))  # outside legend
+				plt.legend(loc='best') # inside legend
+				plt.title('Pareto Solution Candidates')
 				plt.tight_layout(rect=[0, 0, 1.1, 1])
 				mng=NeuralNetwork.getFigureManager()
-				mng.canvas.set_window_title('Pareto search space')
+				mng.canvas.set_window_title('Pareto Solution Candidates')
 				NeuralNetwork.resizeFigure(mng)
 				if save_plots:
 					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_space_{}'.format(label)), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
@@ -1045,32 +1048,35 @@ class NeuralNetwork:
 						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 
 				# solutions only
-				plt.scatter([-el for el in solution_coordinates[0]],solution_coordinates[1],label='Optimal solutions',color='red') # f1/ok is inverted because it is a feature to maximize
-				for i in range(len(solution_labels)):
-					label=NeuralNetwork.getUuidLabel(solution_labels[i])
-					plt.annotate(label,xy=(-solution_coordinates[0][i],solution_coordinates[1][i]),ha='center',fontsize=8,xytext=(0,8),textcoords='offset points')
-				y_offset=max(solution_coordinates[1])*0.1
-				plt.ylim([min(solution_coordinates[1])-y_offset, max(solution_coordinates[1])+y_offset])
-				if use_ok_instead_of_f1:
-					plt.xlabel('ok score')
-				else:
-					plt.xlabel('f1 score')
-				plt.ylabel('mean squared error')
-				plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # plt.legend(loc='best')
-				plt.title('Pareto solutions')
-				plt.tight_layout(rect=[0, 0, 1.1, 1])
-				mng=NeuralNetwork.getFigureManager()
-				mng.canvas.set_window_title('Pareto solutions')
-				NeuralNetwork.resizeFigure(mng)
-				if save_plots:
-					plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_solutions_{}'.format(label)), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
-					plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
-				else:
-					if blocking_plots:
-						plt.show()
+				for figure_name in ('','_without_uuids'):
+					plt.scatter([-el for el in solution_coordinates[0]],solution_coordinates[1],label='Non-dominated solutions',color='red') # f1/ok is inverted because it is a feature to maximize
+					if not 'without' in figure_name: # adds or not the uuid on graph
+						for i in range(len(solution_labels)):
+							label=NeuralNetwork.getUuidLabel(solution_labels[i])
+							plt.annotate(label,xy=(-solution_coordinates[0][i],solution_coordinates[1][i]),ha='center',fontsize=8,xytext=(0,8),textcoords='offset points')
+					y_offset=max(solution_coordinates[1])*0.1
+					plt.ylim([min(solution_coordinates[1])-y_offset, max(solution_coordinates[1])+y_offset])
+					if use_ok_instead_of_f1:
+						plt.xlabel('-AAR')
 					else:
-						plt.show(block=False)
+						plt.xlabel('F1 Score')
+					plt.ylabel('Mean Squared Error')
+					# plt.legend(loc='center left', bbox_to_anchor=(NeuralNetwork.FIGURE_LEGEND_X_ANCHOR, NeuralNetwork.FIGURE_LEGEND_Y_ANCHOR)) # outside legend
+					plt.legend(loc='best') # inside legend
+					plt.title('Pareto Front')
+					plt.tight_layout(rect=[0, 0, 1.1, 1])
+					mng=NeuralNetwork.getFigureManager()
+					mng.canvas.set_window_title('Pareto Front')
+					NeuralNetwork.resizeFigure(mng)
+					if save_plots:
+						plt.savefig(NeuralNetwork.getNextPlotFilepath('pareto_solutions{}_{}'.format(figure_name,label)), bbox_inches="tight", dpi=NeuralNetwork.FIGURE_DPI)
 						plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
+					else:
+						if blocking_plots:
+							plt.show()
+						else:
+							plt.show(block=False)
+							plt.figure(dpi=NeuralNetwork.FIGURE_DPI)
 		else:
 			print('Not enough metrics to optimize')
 

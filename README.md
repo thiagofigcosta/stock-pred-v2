@@ -98,6 +98,12 @@ Install [graphviz](https://graphviz.gitlab.io/download/).
 python3 main.py --train --eval --plot --plot-eval --plot-dataset --save-plots --start-date 01/01/2016 --end-date 07/05/2021 --test-date 07/01/2021 --enrich-dataset --analyze-metrics --use-all-hyper-on-all-stocks --do-not-test-hyperparams-with-more-fields --stock T --stock GOOG
 ```
 You might want to use --force-train
+
+### Running hyperparameters contained in saved_models folder automatically
+```
+python3 main.py --run-available-hyperparam
+```
+
 ## Running with Docker
 
 ### To build image
