@@ -41,11 +41,17 @@ class StockPredNAS(Problem):
 				x_types.append('real')
 			elif limit.data_type==SearchSpace.Type.BOOLEAN:
 				x_types.append('bin')
+				# x_lower_limit[-1] = 1 if x_lower_limit[-1] else 0 # does not work with or without this lines
+				# x_upper_limit[-1] = 1 if x_upper_limit[-1] else 0 # does not work with or without this lines
 			else:
 				raise Exception('Unkown search space data type {}'.format(limit.data_type))
 		
-		x_lower_limit=np.array(x_lower_limit)
-		x_upper_limit=np.array(x_upper_limit)
+		x_lower_limit=np.array(x_lower_limit, dtype='O') # dtytpe=object allows bool, int and float on same array
+		x_upper_limit=np.array(x_upper_limit, dtype='O') # dtytpe=object allows bool, int and float on same array
+
+		self.x_lower_limit=x_lower_limit
+		self.x_upper_limit=x_upper_limit
+		self.x_types=x_types
 
 		self.input_features=input_features
 		self.output_feature=output_feature
@@ -136,9 +142,28 @@ class StockPredNAS(Problem):
 
 		return {'mse':mse,'ok_rate':ok_rate}
 
+
+	def _fixBinaryLimits(self, x):
+		for i,ind_dna in enumerate(x):
+			for g,gene in enumerate(ind_dna):
+				if self.x_types[g] == 'bin':
+					numeric_boolean = type(gene) is not bool
+					fixed_gene=False	
+					if bool(gene) not in (bool(self.x_lower_limit[g]), bool(self.x_upper_limit[g])):
+						gene = bool(self.x_lower_limit[g])
+						fixed_gene=True
+					if fixed_gene:
+						# print('WARN - fixed gene {} of individual {}. Value {} not in [{}, {}]'.format(g,i,x[i][g],self.x_lower_limit[g],self.x_upper_limit[g]))
+						if numeric_boolean:
+							gene = 1 if gene else 0
+						x[i][g] = gene
+
+
 	def _evaluate(self, x, out, *args, **kwargs):
 		generation_mse=[]	
-		generation_ok_rate=[]	
+		generation_ok_rate=[]
+
+		self._fixBinaryLimits(x) # pymoo xu and xl are not working for binary data types, so I manually fix it
 
 		if self.parallelism==1:
 			for i,individual in enumerate(x):
@@ -252,13 +277,13 @@ search_space.add(Optimizers.ADAM,Optimizers.RMSPROP,SearchSpace.Type.INT,'optimi
 search_space.add(NodeType.RELU,NodeType.TANH,SearchSpace.Type.INT,'activation_functions')
 search_space.add(NodeType.RELU,NodeType.TANH,SearchSpace.Type.INT,'recurrent_activation_functions')
 search_space.add(False,False,SearchSpace.Type.BOOLEAN,'shuffle')
-search_space.add(False,False,SearchSpace.Type.BOOLEAN,'use_dense_on_output')
+search_space.add(False,True,SearchSpace.Type.BOOLEAN,'use_dense_on_output')
 search_space.add(60,74,SearchSpace.Type.INT,'layer_sizes')
 search_space.add(0.20,0.28,SearchSpace.Type.FLOAT,'dropout_values')
 search_space.add(0.12,0.17,SearchSpace.Type.FLOAT,'recurrent_dropout_values')
 search_space.add(False,True,SearchSpace.Type.BOOLEAN,'bias')
 search_space.add(False,True,SearchSpace.Type.BOOLEAN,'unit_forget_bias')
-search_space.add(False,False,SearchSpace.Type.BOOLEAN,'go_backwards')
+search_space.add(False,True,SearchSpace.Type.BOOLEAN,'go_backwards')
 search_space=Genome.enrichSearchSpace(search_space)
 amount_companies=1
 train_percent=.8
