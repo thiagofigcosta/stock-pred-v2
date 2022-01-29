@@ -93,8 +93,8 @@ class Hyperparameters:
 		if self.batch_size%2!=0:
 			self.batch_size+=1 # only even batch_sizes
 		# patiences cannot be higher than epochs
-		self.patience_epochs_stop=max(self.patience_epochs_stop,self.max_epochs)
-		self.patience_epochs_reduce=max(self.patience_epochs_reduce,self.max_epochs)
+		self.patience_epochs_stop=min(self.patience_epochs_stop,self.max_epochs)
+		self.patience_epochs_reduce=min(self.patience_epochs_reduce,self.max_epochs)
 		if self.stateful and (self.batch_size is None or self.batch_size == 0):
 			self.batch_size=1 # batch size must be one for stateful
 		if len(self.layer_sizes)==self.lstm_layers:
